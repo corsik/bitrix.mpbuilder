@@ -210,9 +210,9 @@ if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
             "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OBNOVLENIE_SOBRANO"),
             "DETAILS" => GetMessage("BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ") .
                 ': <a href="' . $href . '">' . $link . '</a>.' .
-                '<br><a href="https://partners.1c-bitrix.ru/personal/modules/edit_update_module.php?module=' . urlencode($module_id) . '">' . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V") . ' marketplace</a> ' .
-                '<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">' .
-                $strFileList,
+				'<br><a target="_blank" href="https://partners.1c-bitrix.ru/personal/modules/deploy.php?ID=' . urlencode($module_id) . '">' . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V") . ' marketplace</a> ' .
+				'<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">' .
+				$strFileList,
             "TYPE" => "OK",
             "HTML" => true]);
     } else {
