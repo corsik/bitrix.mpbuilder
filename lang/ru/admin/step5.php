@@ -12,6 +12,7 @@ $MESS["BITRIX_MPBUILDER_NE_UDALOSQ_PROCITATQ"] = "Не удалось прочи
 $MESS["BITRIX_MPBUILDER_NE_UDALOSQ_SOHRANITQ"] = "Не удалось сохранить файл: ";
 $MESS["BITRIX_MPBUILDER_OBNOVLENIE_SOBRANO"] = "Обновление собрано";
 $MESS["BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ"] = "Архив обновления можно скачать по ссылке";
+$MESS["BITRIX_MPBUILDER_FOLDER_OBNOVLENIA_MOJ"] = "Перейти в папку с обновлением";
 $MESS["BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"] = "Ошибка обработки файлов";
 $MESS["BITRIX_MPBUILDER_VYBOR_MODULA"] = "Выбор модуля";
 $MESS["BITRIX_MPBUILDER_TEKUSIY_MODULQ"] = "Текущий модуль:";

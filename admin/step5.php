@@ -203,25 +203,28 @@ if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
         }
     }
 
-    if (!$strError) {
-        $link = '/bitrix/tmp/' . $module_id . '/' . $v . '.tar.gz';
-        $href = "/bitrix/admin/fileman_file_download.php?path=".UrlEncode($link);
-        CAdminMessage::ShowMessage([
-            "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OBNOVLENIE_SOBRANO"),
-            "DETAILS" => GetMessage("BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ") .
-                ': <a href="' . $href . '">' . $link . '</a>.' .
-				'<br><a target="_blank" href="https://partners.1c-bitrix.ru/personal/modules/deploy.php?ID=' . urlencode($module_id) . '">' . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V") . ' marketplace</a> ' .
-				'<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">' .
-				$strFileList,
-            "TYPE" => "OK",
-            "HTML" => true]);
-    } else {
-        CAdminMessage::ShowMessage([
-            "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
-            "DETAILS" => $strError,
-            "TYPE" => "ERROR",
-            "HTML" => true]);
-    }
+	if (!$strError) {
+		$linkFolder = '/bitrix/tmp/' . $module_id . '/';
+		$filemanLink = "/bitrix/admin/fileman_admin.php?lang=ru&site=s1&path=".UrlEncode($linkFolder);
+		$link =  $linkFolder . $v . '.tar.gz';
+		$href = "/bitrix/admin/fileman_file_download.php?path=".UrlEncode($link);
+		CAdminMessage::ShowMessage([
+									   "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OBNOVLENIE_SOBRANO"),
+									   "DETAILS" =>
+										   '<a target="_blank" href="' . $filemanLink . '">' . GetMessage("BITRIX_MPBUILDER_FOLDER_OBNOVLENIA_MOJ") . '</a>.' .
+										   '<br>'.GetMessage("BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ") . ': <a href="' . $href . '">' . $link . '</a>.' .
+										   '<br><a target="_blank" href="https://partners.1c-bitrix.ru/personal/modules/deploy.php?ID=' . urlencode($module_id) . '">' . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V") . ' marketplace</a> ' .
+										   '<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">' .
+										   $strFileList,
+									   "TYPE" => "OK",
+									   "HTML" => true]);
+	} else {
+		CAdminMessage::ShowMessage([
+									   "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
+									   "DETAILS" => $strError,
+									   "TYPE" => "ERROR",
+									   "HTML" => true]);
+	}
 }
 
 ?>
