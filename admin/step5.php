@@ -2,8 +2,10 @@
 require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_before.php");
 require_once($_SERVER["DOCUMENT_ROOT"] . BX_ROOT . "/modules/main/prolog.php");
 
-if (!$USER->IsAdmin())
+if (!$USER->IsAdmin()) {
     $APPLICATION->AuthForm();
+}
+
 
 IncludeModuleLangFile(__FILE__);
 $MODULE_ID = 'bitrix.mpbuilder';
@@ -75,13 +77,15 @@ if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
     }
 
     if (!$strError) {
-        if (is_dir($tmp_dir = $_SERVER['DOCUMENT_ROOT'] . BX_ROOT . '/tmp/' . $module_id))
+        if (is_dir($tmp_dir = $_SERVER['DOCUMENT_ROOT'] . BX_ROOT . '/tmp/' . $module_id)) {
             BuilderRmDir($tmp_dir);
+        }
 
         mkdir($tmp_dir . '/' . $v, BX_DIR_PERMISSIONS, true);
 
-        if (function_exists('mb_internal_encoding'))
+        if (function_exists('mb_internal_encoding')) {
             mb_internal_encoding('ISO-8859-1');
+        }
 
         if (!$strError && $_REQUEST['components']) {
             $ar = [];
@@ -142,28 +146,33 @@ if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
                 $from = $m_dir . $file;
                 $to = $tmp_dir . '/' . $v . $file;
 
-                if ($file == '/install/_version.php')
+                if ($file == '/install/_version.php') {
                     continue;
+                }
 
                 if ($file == '/install/version.php') {
                     if ($_REQUEST['store_version'] && !file_put_contents($from, $strVersion))
                         $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ") . $from . '<br>';
 
-                    if (!file_exists($dir = dirname($to)))
+                    if (!file_exists($dir = dirname($to))) {
                         mkdir($dir, BX_DIR_PERMISSIONS, true);
-                    if (file_put_contents($to, $strVersion))
+                    }
+
+                    if (file_put_contents($to, $strVersion)) {
                         TarAddFile($tmp_dir, $to);
-                    else
+                    } else {
                         $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ") . $to . '<br>';
+                    }
+
                     continue;
                 }
 
                 if (filemtime($from) < $time_from)
                     continue;
 
-                if (false === $str = file_get_contents($from))
+                if (false === $str = file_get_contents($from)) {
                     $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_PROCITATQ") . $from . '<br>';
-                else {
+                } else {
                     if (substr($file, -4) == '.php' && GetStringCharset($str) == 'utf8')
                         $str = $APPLICATION->ConvertCharset($str, 'utf8', 'cp1251');
 
@@ -203,28 +212,28 @@ if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
         }
     }
 
-	if (!$strError) {
-		$linkFolder = '/bitrix/tmp/' . $module_id . '/';
-		$filemanLink = "/bitrix/admin/fileman_admin.php?lang=ru&site=s1&path=".UrlEncode($linkFolder);
-		$link =  $linkFolder . $v . '.tar.gz';
-		$href = "/bitrix/admin/fileman_file_download.php?path=".UrlEncode($link);
-		CAdminMessage::ShowMessage([
-									   "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OBNOVLENIE_SOBRANO"),
-									   "DETAILS" =>
-										   '<a target="_blank" href="' . $filemanLink . '">' . GetMessage("BITRIX_MPBUILDER_FOLDER_OBNOVLENIA_MOJ") . '</a>.' .
-										   '<br>'.GetMessage("BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ") . ': <a href="' . $href . '">' . $link . '</a>.' .
-										   '<br><a target="_blank" href="https://partners.1c-bitrix.ru/personal/modules/deploy.php?ID=' . urlencode($module_id) . '">' . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V") . ' marketplace</a> ' .
-										   '<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">' .
-										   $strFileList,
-									   "TYPE" => "OK",
-									   "HTML" => true]);
-	} else {
-		CAdminMessage::ShowMessage([
-									   "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
-									   "DETAILS" => $strError,
-									   "TYPE" => "ERROR",
-									   "HTML" => true]);
-	}
+    if (!$strError) {
+        $linkFolder = '/bitrix/tmp/' . $module_id . '/';
+        $filemanLink = "/bitrix/admin/fileman_admin.php?lang=ru&site=s1&path=" . UrlEncode($linkFolder);
+        $link = $linkFolder . $v . '.tar.gz';
+        $href = "/bitrix/admin/fileman_file_download.php?path=" . UrlEncode($link);
+        CAdminMessage::ShowMessage([
+            "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OBNOVLENIE_SOBRANO"),
+            "DETAILS" =>
+                '<a target="_blank" href="' . $filemanLink . '">' . GetMessage("BITRIX_MPBUILDER_FOLDER_OBNOVLENIA_MOJ") . '</a>.' .
+                '<br>' . GetMessage("BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ") . ': <a href="' . $href . '">' . $link . '</a>.' .
+                '<br><a target="_blank" href="https://partners.1c-bitrix.ru/personal/modules/deploy.php?ID=' . urlencode($module_id) . '">' . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V") . ' marketplace</a> ' .
+                '<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">' .
+                $strFileList,
+            "TYPE" => "OK",
+            "HTML" => true]);
+    } else {
+        CAdminMessage::ShowMessage([
+            "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
+            "DETAILS" => $strError,
+            "TYPE" => "ERROR",
+            "HTML" => true]);
+    }
 }
 
 ?>
@@ -235,138 +244,138 @@ if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
     $editTab->Begin();
     $editTab->BeginNextTab();
     ?>
-  <tr class=heading>
-    <td colspan=2><?= GetMessage("BITRIX_MPBUILDER_VYBOR_MODULA") ?></td>
-  </tr>
-  <tr>
-    <td><?= GetMessage("BITRIX_MPBUILDER_TEKUSIY_MODULQ") ?></td>
-    <td>
-      <select name=module_id onchange="document.location='?module_id='+this.value">
-        <option></option>
-          <?
-          $arModules = [];
-          $dir = opendir($path = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules');
-          while (false !== $item = readdir($dir)) {
-              if ($item == '.' || $item == '..' || !is_dir($path . '/' . $item) || !strpos($item, '.'))
-                  continue;
-              $arModules[$item] = '<option value="' . $item . '" ' . ($module_id == $item ? 'selected' : '') . '>' . $item . '</option>';
-          }
-          closedir($dir);
-          asort($arModules);
-          echo implode("\n", $arModules);
-          ?>
-      </select>
-    </td>
-  </tr>
+    <tr class=heading>
+        <td colspan=2><?= GetMessage("BITRIX_MPBUILDER_VYBOR_MODULA") ?></td>
+    </tr>
+    <tr>
+        <td><?= GetMessage("BITRIX_MPBUILDER_TEKUSIY_MODULQ") ?></td>
+        <td>
+            <select name=module_id onchange="document.location='?module_id='+this.value">
+                <option></option>
+                <?
+                $arModules = [];
+                $dir = opendir($path = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules');
+                while (false !== $item = readdir($dir)) {
+                    if ($item == '.' || $item == '..' || !is_dir($path . '/' . $item) || !strpos($item, '.'))
+                        continue;
+                    $arModules[$item] = '<option value="' . $item . '" ' . ($module_id == $item ? 'selected' : '') . '>' . $item . '</option>';
+                }
+                closedir($dir);
+                asort($arModules);
+                echo implode("\n", $arModules);
+                ?>
+            </select>
+        </td>
+    </tr>
     <?
     if ($module_id) {
         ?>
-      <tr>
-        <td valign=top><?= GetMessage("BITRIX_MPBUILDER_VERSIA_OBNOVLENIA") ?></td>
-        <td>
-          <input name="version"
-                 value="<?= ($v = $_REQUEST['version'] ? htmlspecialcharsbx($_REQUEST['version']) : VersionUp($arModuleVersion['VERSION'])) ?>">
-          <label><input type=checkbox
-                        name=store_version <?= $_REQUEST['store_version'] ? 'checked' : '' ?>> <?= GetMessage("BITRIX_MPBUILDER_OBNOVITQ_DATU_I_VERS") ?>
-          </label>
-            <?
-            if (file_exists($f = $m_dir . '/install/_version.php')) {
-                include($f);
-                if ($arModuleVersion['VERSION'] != $v)
-                    echo '<br>' . GetMessage("BITRIX_MPBUILDER_DOSTUPNA_VERSIA") . htmlspecialcharsbx($arModuleVersion['VERSION']) . '</b> ' . GetMessage("BITRIX_MPBUILDER_FILE") . ' version.php. <a href="javascript:if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ_STARUU") . '?\'))document.location=\'?action=version_restore&' . bitrix_sessid_get() . '\'">' . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ") . '</a>.';
-            }
-            ?>
-        </td>
-      </tr>
-      <tr>
-        <td valign=top><?= GetMessage("BITRIX_MPBUILDER_OBRABOTKA_USTANOVLEN") ?></td>
-        <td>
-            <?
-            $bCustomNameSpace = false;
-            if (!file_exists($path = $m_dir . '/install/components'))
-                echo GetMessage("BITRIX_MPBUILDER_MODULQ_NE_SODERJIT_K") . ' /install';
-            else {
-                echo '<label><input type=checkbox onchange="if(ob=document.getElementById(\'NAMESPACE\'))ob.disabled=!this.checked;" name=components ' . ($_REQUEST['components'] ? 'checked' : '') . '> ' . GetMessage("BITRIX_MPBUILDER_SKOPIROVATQ_IZMENENN") . ' /bitrix/components/ ' . GetMessage("BITRIX_MPBUILDER_V_ADRO_MODULA") . '</label>';
-                $dir = opendir($path);
-                while (false !== $item = readdir($dir)) {
-                    if ($item == '.' || $item == '..' || !is_dir($path0 = $path . '/' . $item))
-                        continue;
-                    if ($bCustomNameSpace = file_exists($path0 . '/component.php'))
-                        break;
+        <tr>
+            <td valign=top><?= GetMessage("BITRIX_MPBUILDER_VERSIA_OBNOVLENIA") ?></td>
+            <td>
+                <input name="version"
+                       value="<?= ($v = $_REQUEST['version'] ? htmlspecialcharsbx($_REQUEST['version']) : VersionUp($arModuleVersion['VERSION'])) ?>">
+                <label><input type=checkbox
+                              name=store_version <?= $_REQUEST['store_version'] ? 'checked' : '' ?>> <?= GetMessage("BITRIX_MPBUILDER_OBNOVITQ_DATU_I_VERS") ?>
+                </label>
+                <?
+                if (file_exists($f = $m_dir . '/install/_version.php')) {
+                    include($f);
+                    if ($arModuleVersion['VERSION'] != $v)
+                        echo '<br>' . GetMessage("BITRIX_MPBUILDER_DOSTUPNA_VERSIA") . htmlspecialcharsbx($arModuleVersion['VERSION']) . '</b> ' . GetMessage("BITRIX_MPBUILDER_FILE") . ' version.php. <a href="javascript:if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ_STARUU") . '?\'))document.location=\'?action=version_restore&' . bitrix_sessid_get() . '\'">' . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ") . '</a>.';
                 }
-                closedir($dir);
-            }
-            ?>
-        </td>
-      </tr>
+                ?>
+            </td>
+        </tr>
+        <tr>
+            <td valign=top><?= GetMessage("BITRIX_MPBUILDER_OBRABOTKA_USTANOVLEN") ?></td>
+            <td>
+                <?
+                $bCustomNameSpace = false;
+                if (!file_exists($path = $m_dir . '/install/components'))
+                    echo GetMessage("BITRIX_MPBUILDER_MODULQ_NE_SODERJIT_K") . ' /install';
+                else {
+                    echo '<label><input type=checkbox onchange="if(ob=document.getElementById(\'NAMESPACE\'))ob.disabled=!this.checked;" name=components ' . ($_REQUEST['components'] ? 'checked' : '') . '> ' . GetMessage("BITRIX_MPBUILDER_SKOPIROVATQ_IZMENENN") . ' /bitrix/components/ ' . GetMessage("BITRIX_MPBUILDER_V_ADRO_MODULA") . '</label>';
+                    $dir = opendir($path);
+                    while (false !== $item = readdir($dir)) {
+                        if ($item == '.' || $item == '..' || !is_dir($path0 = $path . '/' . $item))
+                            continue;
+                        if ($bCustomNameSpace = file_exists($path0 . '/component.php'))
+                            break;
+                    }
+                    closedir($dir);
+                }
+                ?>
+            </td>
+        </tr>
         <?
         if ($bCustomNameSpace) {
             ?>
-          <tr>
-            <td><?= GetMessage("BITRIX_MPBUILDER_PROSTRANSTVO_IMEN_KO") ?></td>
-            <td>/bitrix/components/<input name=NAMESPACE id=NAMESPACE
-                                          value="<?= htmlspecialcharsbx($NAMESPACE) ?>" <?= $_REQUEST['components'] ? '' : 'disabled' ?>>
-            </td>
-          </tr>
-          <tr>
-            <td></td>
-            <td class=smalltext><?= GetMessage("BITRIX_MPBUILDER_KOMPONENTY_MODULA_LE") ?>
-              <i>install</i>, <?= GetMessage("BITRIX_MPBUILDER_CTOBY_PROVERITQ_IZME") ?><br>
-                <?= GetMessage("BITRIX_MPBUILDER_TAKJE_UBEDITESQ_CTO") ?>
-              <i>updater.php</i> <?= GetMessage("BITRIX_MPBUILDER_PRAVILQNO_KOPIRUET_K") ?></td>
-          </tr>
+            <tr>
+                <td><?= GetMessage("BITRIX_MPBUILDER_PROSTRANSTVO_IMEN_KO") ?></td>
+                <td>/bitrix/components/<input name=NAMESPACE id=NAMESPACE
+                                              value="<?= htmlspecialcharsbx($NAMESPACE) ?>" <?= $_REQUEST['components'] ? '' : 'disabled' ?>>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td class=smalltext><?= GetMessage("BITRIX_MPBUILDER_KOMPONENTY_MODULA_LE") ?>
+                    <i>install</i>, <?= GetMessage("BITRIX_MPBUILDER_CTOBY_PROVERITQ_IZME") ?><br>
+                    <?= GetMessage("BITRIX_MPBUILDER_TAKJE_UBEDITESQ_CTO") ?>
+                    <i>updater.php</i> <?= GetMessage("BITRIX_MPBUILDER_PRAVILQNO_KOPIRUET_K") ?></td>
+            </tr>
             <?
         }
         ?>
-      <tr>
-        <td valign=top><?= GetMessage("BITRIX_MPBUILDER_OPISANIE_OBNOVLENIA") ?></td>
-        <td>
-            <?
-            if (!$description = $_REQUEST['description']) {
-                if (file_exists($f = $_SERVER['DOCUMENT_ROOT'] . BX_ROOT . '/tmp/' . $module_id . '/' . $v . '/description.ru')) {
-                    $description = file_get_contents($f);
-                    if (defined('BX_UTF') && BX_UTF)
-                        $description = $APPLICATION->ConvertCharset($description, 'cp1251', 'utf8');
+        <tr>
+            <td valign=top><?= GetMessage("BITRIX_MPBUILDER_OPISANIE_OBNOVLENIA") ?></td>
+            <td>
+                <?
+                if (!$description = $_REQUEST['description']) {
+                    if (file_exists($f = $_SERVER['DOCUMENT_ROOT'] . BX_ROOT . '/tmp/' . $module_id . '/' . $v . '/description.ru')) {
+                        $description = file_get_contents($f);
+                        if (defined('BX_UTF') && BX_UTF)
+                            $description = $APPLICATION->ConvertCharset($description, 'cp1251', 'utf8');
+                    }
                 }
-            }
 
-            if (!$description) {
-                $description = '<ul>
+                if (!$description) {
+                    $description = '<ul>
   <li></li>
 </ul>';
-            }
+                }
 
-            ?>
-          <textarea name=description style="width:100%"
-                    rows=10><?= htmlspecialcharsbx($description) ?></textarea>
-        </td>
-      </tr>
-      <tr>
-        <td></td>
-        <td class=smalltext><?= GetMessage("BITRIX_MPBUILDER_PRI_PEREDACE_ISPOLNA") ?></td>
-      </tr>
-      <tr>
-        <td valign=top><?= GetMessage("BITRIX_MPBUILDER_SKRIPT_OBNOVLENIA") ?> updater.php:</td>
-        <td>
-            <?
-            if ($_SERVER['REQUEST_METHOD'] == 'POST')
-                $updater = $_REQUEST['updater'];
-            else {
-                $updater = file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/bitrix.mpbuilder/samples/_updater.php');
-                $updater = str_replace('{MODULE_ID}', $module_id, $updater);
-                $updater = str_replace('{NAMESPACE}', $bCustomNameSpace ? $NAMESPACE : '', $updater);
-            }
-            ?>
-          <textarea name=updater style="width:100%"
-                    rows=10><?= htmlspecialcharsbx($updater) ?></textarea>
-        </td>
-      </tr>
+                ?>
+                <textarea name=description style="width:100%"
+                          rows=10><?= htmlspecialcharsbx($description) ?></textarea>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td class=smalltext><?= GetMessage("BITRIX_MPBUILDER_PRI_PEREDACE_ISPOLNA") ?></td>
+        </tr>
+        <tr>
+            <td valign=top><?= GetMessage("BITRIX_MPBUILDER_SKRIPT_OBNOVLENIA") ?> updater.php:</td>
+            <td>
+                <?
+                if ($_SERVER['REQUEST_METHOD'] == 'POST')
+                    $updater = $_REQUEST['updater'];
+                else {
+                    $updater = file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/bitrix.mpbuilder/samples/_updater.php');
+                    $updater = str_replace('{MODULE_ID}', $module_id, $updater);
+                    $updater = str_replace('{NAMESPACE}', $bCustomNameSpace ? $NAMESPACE : '', $updater);
+                }
+                ?>
+                <textarea name=updater style="width:100%"
+                          rows=10><?= htmlspecialcharsbx($updater) ?></textarea>
+            </td>
+        </tr>
         <?
     }
 
     $editTab->Buttons();
     ?>
-  <input type="submit" name=save value="<?= GetMessage("BITRIX_MPBUILDER_PRODOLJITQ") ?>">
+    <input type="submit" name=save value="<?= GetMessage("BITRIX_MPBUILDER_PRODOLJITQ") ?>">
 </form>
 <?
 $editTab->End();
