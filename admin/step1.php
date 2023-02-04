@@ -70,8 +70,8 @@ if ($_POST['save'] && check_bitrix_sessid())
 	{
 		$MODULE_CLASS_NAME = str_replace('.','_',$module);
 		$INCLUDE_CLASS_NAME = 'C'.preg_replace('/[^a-z]/i','',ucwords(preg_replace('/[^a-z]/i',' ',$module)));
-		
-		($str = file_get_contents($f = $_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/bitrix.mpbuilder/samples/install/index.php')) || die(GetMessage("BITRIX_MPBUILDER_FAYL_NE_NAYDEN").$f);
+
+		($str = file_get_contents($f = $_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/bitrix.mpbuilder/`samples/install/index.php')) || die(GetMessage("BITRIX_MPBUILDER_FAYL_NE_NAYDEN").$f);
 		$str = str_replace('{MODULE_CLASS_NAME}', $MODULE_CLASS_NAME, $str);
 		$str = str_replace('{MODULE_ID}', $module, $str);
 		$str = str_replace('{INCLUDE_CLASS_NAME}', $INCLUDE_CLASS_NAME, $str);

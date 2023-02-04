@@ -1,5 +1,5 @@
-<?
-Class {INCLUDE_CLASS_NAME} 
+<?php
+Class {INCLUDE_CLASS_NAME}
 {
 	function OnBuildGlobalMenu(&$aGlobalMenu, &$aModuleMenu)
 	{

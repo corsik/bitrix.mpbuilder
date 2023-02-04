@@ -1,9 +1,9 @@
-<?
+<?php
 IncludeModuleLangFile(__FILE__);
-Class {MODULE_CLASS_NAME} extends CModule
+class {MODULE_CLASS_NAME} extends CModule
 {
 	const MODULE_ID = '{MODULE_ID}';
-	var $MODULE_ID = '{MODULE_ID}'; 
+	var $MODULE_ID = '{MODULE_ID}';
 	var $MODULE_VERSION;
 	var $MODULE_VERSION_DATE;
 	var $MODULE_NAME;
@@ -13,7 +13,7 @@ Class {MODULE_CLASS_NAME} extends CModule
 
 	function __construct()
 	{
-		$arModuleVersion = array();
+		$arModuleVersion = [];
 		include(dirname(__FILE__)."/version.php");
 		$this->MODULE_VERSION = $arModuleVersion["VERSION"];
 		$this->MODULE_VERSION_DATE = $arModuleVersion["VERSION_DATE"];
@@ -24,13 +24,13 @@ Class {MODULE_CLASS_NAME} extends CModule
 		$this->PARTNER_URI = GetMessage("{MODULE_ID}_PARTNER_URI");
 	}
 
-	function InstallDB($arParams = array())
+	function InstallDB($arParams = [])
 	{
 		RegisterModuleDependences('main', 'OnBuildGlobalMenu', self::MODULE_ID, '{INCLUDE_CLASS_NAME}', 'OnBuildGlobalMenu');
 		return true;
 	}
 
-	function UnInstallDB($arParams = array())
+	function UnInstallDB($arParams = [])
 	{
 		UnRegisterModuleDependences('main', 'OnBuildGlobalMenu', self::MODULE_ID, '{INCLUDE_CLASS_NAME}', 'OnBuildGlobalMenu');
 		return true;
@@ -46,7 +46,7 @@ Class {MODULE_CLASS_NAME} extends CModule
 		return true;
 	}
 
-	function InstallFiles($arParams = array())
+	function InstallFiles($arParams = [])
 	{
 		if (is_dir($p = $_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/'.self::MODULE_ID.'/admin'))
 		{

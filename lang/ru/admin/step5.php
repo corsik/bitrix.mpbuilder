@@ -7,6 +7,7 @@ $MESS["BITRIX_MPBUILDER_OBNOVLENIE_NEOBHODIM"] = "Обновление необ�
 $MESS["BITRIX_MPBUILDER_VERSIA_MODULA_NE_UKA"] = "Версия модуля не указана";
 $MESS["BITRIX_MPBUILDER_NE_UKAZANO_OPISANIE"] = "Не указано описание обновления";
 $MESS["BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ"] = "Не удалось записать файл: ";
+$MESS["BITRIX_MPBUILDER_NOT_WRITE_NEW_VERSION"] = "Не удалось обновить версию обновления";
 $MESS["BITRIX_MPBUILDER_NE_UDALOSQ_OTKRYTQ_F"] = "Не удалось открыть файл на запись: ";
 $MESS["BITRIX_MPBUILDER_NE_UDALOSQ_PROCITATQ"] = "Не удалось прочитать файл: ";
 $MESS["BITRIX_MPBUILDER_NE_UDALOSQ_SOHRANITQ"] = "Не удалось сохранить файл: ";
