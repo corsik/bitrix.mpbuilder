@@ -203,8 +203,6 @@ if ($_REQUEST['action'] == 'delete' && $moduleId && check_bitrix_sessid()) {
             }
         }
 
-        Filesystem::packFolder($module->getRootDirVersionPath($version), $module->getRootTmpDirPath());
-
         if (!$strError) {
             $descriptionFilePath = $module->getRootDirVersionPath($version) . '/description.ru';
             $description = $_REQUEST['description'];
@@ -229,6 +227,8 @@ if ($_REQUEST['action'] == 'delete' && $moduleId && check_bitrix_sessid()) {
                 $strFileList .= substr($updaterFilePath, $tmpDirStrLen) . '<br>';
             }
         }
+
+        Filesystem::packFolder($module->getRootDirVersionPath($version), $module->getRootTmpDirPath());
     }
 
     if (!$strError) {
