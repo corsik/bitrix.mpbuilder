@@ -70,7 +70,7 @@ class CBitrixMpBuilder
 
 class CBuilderLang
 {
-    private array $MESS;
+    private array $MESS = [];
     public string $strLangPrefix;
     private string $m_dir;
     private string $file;
@@ -361,28 +361,34 @@ class CBuilderLang
     public function Save(): bool
     {
         $str = "<" . "?\n";
-        foreach ($this->MESS as $key => $val)
+        foreach ($this->MESS as $key => $val) {
             $str .= '$MESS["' . $key . '"] = "' . str_replace('"', '\\"', str_replace('\\', '\\\\', $val)) . '";' . "\n";
+        }
         $str .= "?" . ">";
 
-        if ($this->bSiteUTF)
+        if ($this->bSiteUTF) {
             $str = $GLOBALS['APPLICATION']->ConvertCharset($str, 'cp1251', 'utf8');
+        }
 
-        if (!file_put_contents($this->m_dir . $this->lang_file, $str))
+        if (!file_put_contents($this->m_dir . $this->lang_file, $str)) {
             return false;
+        }
 
         $prefix = '';
-        if (preg_match('#^/admin#', $this->file) && !preg_match('/(require|include).+prolog_admin/', $this->strResultScript))
+        if (preg_match('#^/admin#', $this->file) && !preg_match('/(require|include).+prolog_admin/', $this->strResultScript)) {
             $prefix = '<' . '?php' . "\n" .
                 'require_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_admin_before.php");' . "\n" .
                 'IncludeModuleLangFile(__FILE__);' . "\n" .
                 '?' . '>';
+        }
 
-        if ($this->bSiteUTF)
+        if ($this->bSiteUTF) {
             $this->strResultScript = $GLOBALS['APPLICATION']->ConvertCharset($this->strResultScript, 'cp1251', 'utf8');
+        }
 
-        if (!file_put_contents($this->m_dir . $this->file, $prefix . $this->strResultScript))
+        if (!file_put_contents($this->m_dir . $this->file, $prefix . $this->strResultScript)) {
             return false;
+        }
 
         return true;
     }

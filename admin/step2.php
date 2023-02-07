@@ -43,7 +43,7 @@ if ($_POST['save'] && $module_id && check_bitrix_sessid()) {
         }
 
         $lang_file = GetLangPath($file, $m_dir);
-        if ($CBL = new CBuilderLang($m_dir, $file, $lang_file)) {
+        if ($CBL = new \CBuilderLang($m_dir, $file, $lang_file)) {
             $CBL->strLangPrefix = strtoupper(str_replace('.', '_', $module_id)) . '_';
             $CBL->Parse();
             if (!$CBL->Save()) {
@@ -54,14 +54,15 @@ if ($_POST['save'] && $module_id && check_bitrix_sessid()) {
         }
     }
 
-    if ($strError)
-        CAdminMessage::ShowMessage([
+    if ($strError) {
+        \CAdminMessage::ShowMessage([
             "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
             "DETAILS" => $strError,
             "TYPE" => "ERROR",
             "HTML" => true]);
-    else
+    } else {
         LocalRedirect('/bitrix/admin/bitrix.mpbuilder_step3.php?module_id=' . $module_id . '&lang=' . LANGUAGE_ID);
+    }
 }
 
 ?>
@@ -137,8 +138,9 @@ if ($_POST['save'] && $module_id && check_bitrix_sessid()) {
                         l = frm.elements.length;
                         for (i = 0; i < l; i++) {
                             ob = frm.elements[i];
-                            if (ob.type == 'checkbox' && ob != all)
+                            if (ob.type === 'checkbox' && ob !== all) {
                                 ob.checked = all.checked;
+                            }
                         }
                     }
                 </script>
