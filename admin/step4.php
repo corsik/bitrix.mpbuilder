@@ -37,77 +37,81 @@ echo BeginNote() .
     GetMessage("BITRIX_MPBUILDER_VSE_SKRIPTY_MODULA_B") . ' cp1251, ' . GetMessage("BITRIX_MPBUILDER_ZATEM_BUDET_SOZDAN_A") . ' .last_version.tar.gz, ' . GetMessage("BITRIX_MPBUILDER_KOTORYY_NADO_OTPRAVI") . ' <a href="https://partners.1c-bitrix.ru/personal/modules/edit_module.php?ID=' . $module_id . '" target="_blank">marketplace</a>.' .
     EndNote();
 
-$module = new Module($module_id);
-$tmpModulePathLastVersion = $module->getTmpDirPath() . "/.last_version";
-$tmpModuleRootPathLastVersion = $module->getRootTmpDirPath() . "/.last_version";
+
+if ($module_id && check_bitrix_sessid()) {
+
+    $moduleBuilder = new Module($module_id);
+    $tmpModulePathLastVersion = $moduleBuilder->getTmpDirPath() . "/.last_version";
+    $tmpModuleRootPathLastVersion = $moduleBuilder->getRootTmpDirPath() . "/.last_version";
+
+    if ($_REQUEST['action'] == 'delete') {
+        Filesystem::rmDir($moduleBuilder->getRootTmpDirPath());
+    } elseif ($_POST['save']) {
+        $strError = '';
+        $version = $_REQUEST['version'];
+
+        if ($version && !file_put_contents($moduleBuilder->getRootFileVersionPath(), $moduleBuilder->getContextVersion($version))) {
+            $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ") . $moduleBuilder->getRootFileVersionPath() . '<br>';
+        }
+
+        if (is_dir($moduleBuilder->getRootTmpDirPath())) {
+            Filesystem::rmDir($moduleBuilder->getRootTmpDirPath());
+        }
+
+        mkdir($tmpModulePathLastVersion, BX_DIR_PERMISSIONS, true);
+
+        if (function_exists('mb_internal_encoding')) {
+            mb_internal_encoding('ISO-8859-1');
+        }
 
 
-if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
-    Filesystem::rmDir($module->getRootTmpDirPath());
-} elseif ($_POST['save'] && $module_id && check_bitrix_sessid()) {
-    $strError = '';
-    $version = $_REQUEST['version'];
+        $originalModuleFiles = Filesystem::getFiles($moduleBuilder->getRootDirPath(), ['.svn', '.hg', '.git'], true);
 
-    if ($version && !file_put_contents($module->getRootFileVersionPath(), $module->getContextVersion($version))) {
-        $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ") . $module->getRootFileVersionPath() . '<br>';
-    }
+        foreach ($originalModuleFiles as $file) {
+            $fromFile = $moduleBuilder->getRootDirPath() . $file;
+            $toFile = $tmpModuleRootPathLastVersion . $file;
+            $fileContents = file_get_contents($fromFile);
 
-    if (is_dir($module->getRootTmpDirPath())) {
-        Filesystem::rmDir($module->getRootTmpDirPath());
-    }
+            if (!$fileContents) {
+                $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_PROCITATQ") . $fromFile . '<br>';
+            } else {
+                if (substr($file, -4) == '.php' && Filesystem::getStringCharset($fileContents) == 'utf8') {
+                    $fileContents = Encoding::convertEncoding($fileContents, 'utf8', 'cp1251');
+                }
 
-    mkdir($tmpModulePathLastVersion, BX_DIR_PERMISSIONS, true);
+                $dir = dirname($toFile);
+                if (!file_exists($dir)) {
+                    mkdir($dir, BX_DIR_PERMISSIONS, true);
+                }
 
-    if (function_exists('mb_internal_encoding')) {
-        mb_internal_encoding('ISO-8859-1');
-    }
-
-
-    $originalModuleFiles = Filesystem::getFiles($module->getRootDirPath(), ['.svn', '.hg', '.git'], true);
-
-    foreach ($originalModuleFiles as $file) {
-        $fromFile = $module->getRootDirPath() . $file;
-        $toFile = $tmpModuleRootPathLastVersion . $file;
-        $fileContents = file_get_contents($fromFile);
-
-        if (!$fileContents) {
-            $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_PROCITATQ") . $fromFile . '<br>';
-        } else {
-            if (substr($file, -4) == '.php' && Filesystem::getStringCharset($fileContents) == 'utf8') {
-                $fileContents = Encoding::convertEncoding($fileContents, 'utf8', 'cp1251');
-            }
-
-            $dir = dirname($toFile);
-            if (!file_exists($dir)) {
-                mkdir($dir, BX_DIR_PERMISSIONS, true);
-            }
-
-            if (!file_put_contents($toFile, $fileContents)) {
-                $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_SOHRANITQ") . $toFile . '<br>';
+                if (!file_put_contents($toFile, $fileContents)) {
+                    $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_SOHRANITQ") . $toFile . '<br>';
+                }
             }
         }
-    }
 
-    Filesystem::packFolder($tmpModuleRootPathLastVersion, $module->getRootTmpDirPath());
+        Filesystem::packFolder($tmpModuleRootPathLastVersion, $moduleBuilder->getRootTmpDirPath());
 
-    if (!$strError) {
-        $link = "$tmpModulePathLastVersion.tar.gz";
-        $href = "/bitrix/admin/fileman_file_download.php?path=" . UrlEncode("$tmpModulePathLastVersion.tar.gz");
-        \CAdminMessage::ShowMessage([
-            "MESSAGE" => GetMessage("BITRIX_MPBUILDER_ARHIV_SOZDAN_USPESNO"),
-            "DETAILS" => GetMessage("BITRIX_MPBUILDER_GOTOVYY_VARIANT_MOJN") .
-                ': <a href="' . $href . '">' . $link . '</a>' .
-                '<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if (confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">',
-            "TYPE" => "OK",
-            "HTML" => true]);
-    } else {
-        \CAdminMessage::ShowMessage([
-            "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
-            "DETAILS" => $strError,
-            "TYPE" => "ERROR",
-            "HTML" => true]);
+        if (!$strError) {
+            $link = "$tmpModulePathLastVersion.tar.gz";
+            $href = "/bitrix/admin/fileman_file_download.php?path=" . UrlEncode("$tmpModulePathLastVersion.tar.gz");
+            \CAdminMessage::ShowMessage([
+                "MESSAGE" => GetMessage("BITRIX_MPBUILDER_ARHIV_SOZDAN_USPESNO"),
+                "DETAILS" => GetMessage("BITRIX_MPBUILDER_GOTOVYY_VARIANT_MOJN") .
+                    ': <a href="' . $href . '">' . $link . '</a>' .
+                    '<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if (confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $module_id . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">',
+                "TYPE" => "OK",
+                "HTML" => true]);
+        } else {
+            \CAdminMessage::ShowMessage([
+                "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
+                "DETAILS" => $strError,
+                "TYPE" => "ERROR",
+                "HTML" => true]);
+        }
     }
 }
+
 
 ?>
 <form action="<?php echo $APPLICATION->GetCurPage() ?>?lang=<?= LANG ?>" method="POST"
@@ -141,8 +145,8 @@ if ($_REQUEST['action'] == 'delete' && $module_id && check_bitrix_sessid()) {
         </td>
     </tr>
     <?php
-    if ($module_id) {
-        include($module->getRootFileVersionPath());
+    if (isset($module_id) && isset($moduleBuilder)) {
+        include($moduleBuilder->getRootFileVersionPath());
         ?>
         <tr>
             <td><?= GetMessage("BITRIX_MPBUILDER_VERSIA_MODULA") ?></td>

@@ -31,7 +31,8 @@ if (check_bitrix_sessid()) {
     $lang_file = str_replace('\\', '/', $_REQUEST['lang_file']);
 
     if ($_REQUEST['save']) {
-        if (($str0 = file_get_contents($m_dir . $file)) && is_array($arMess = GetMess($lang_file))) {
+        $arMess = GetMess($lang_file);
+        if (($str0 = file_get_contents($m_dir . $file)) && is_array($arMess)) {
             $arNewMess = [];
             foreach ($arMess as $key => $val) {
                 $new_key = str_replace(' ', '_', $_REQUEST['prefix'] . $_REQUEST['arMess'][$key]);
@@ -76,7 +77,7 @@ if (check_bitrix_sessid()) {
 $aTabs = [
     ["DIV" => "tab1", "TAB" => GetMessage("BITRIX_MPBUILDER_STEP"), "ICON" => "main_user_edit", "TITLE" => GetMessage("BITRIX_MPBUILDER_EDITOR")],
 ];
-$editTab = new CAdminTabControl("editTab", $aTabs, true, true);
+$editTab = new \CAdminTabControl("editTab", $aTabs, true, true);
 $prefix = '';
 
 echo BeginNote() .

@@ -424,7 +424,7 @@ function GetLangPath($file, $m_dir)
     return $lang_file;
 }
 
-function VersionUp($num): string
+function VersionUp(string $num): string
 {
     $ar = explode('.', $num);
     if (count($ar) == 3) {
@@ -434,12 +434,12 @@ function VersionUp($num): string
     return $num;
 }
 
-function GetMess($f): string
+function GetMess(string $filePath): ?array
 {
-    $MESS = false;
+    $MESS = null;
 
-    if (is_file($f)) {
-        include($f);
+    if (is_file($filePath)) {
+        include($filePath);
     }
 
     return $MESS;

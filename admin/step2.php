@@ -19,7 +19,7 @@ require($_SERVER["DOCUMENT_ROOT"] . BX_ROOT . "/modules/main/include/prolog_admi
 $aTabs = [
     ["DIV" => "tab1", "TAB" => GetMessage("BITRIX_MPBUILDER_SAG"), "ICON" => "main_user_edit", "TITLE" => GetMessage("BITRIX_MPBUILDER_VYDELENIE_AZYKOVYH_F")],
 ];
-$editTab = new CAdminTabControl("editTab", $aTabs, true, true);
+$editTab = new \CAdminTabControl("editTab", $aTabs, true, true);
 
 echo BeginNote() .
     GetMessage("BITRIX_MPBUILDER_PERED_PUBLIKACIEY_MO") .

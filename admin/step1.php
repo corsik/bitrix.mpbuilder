@@ -14,7 +14,7 @@ require($_SERVER["DOCUMENT_ROOT"].BX_ROOT."/modules/main/include/prolog_admin_af
 $aTabs = array(
 	array("DIV"=>"tab1", "TAB"=>GetMessage("BITRIX_MPBUILDER_SAG"), "ICON"=>"main_user_edit", "TITLE"=>GetMessage("BITRIX_MPBUILDER_SOZDANIE_MODULA_IZ_S")),
 );
-$editTab = new CAdminTabControl("editTab", $aTabs);
+$editTab = new \CAdminTabControl("editTab", $aTabs);
 
 echo BeginNote().
 	GetMessage("BITRIX_MPBUILDER_DANNAA_FORMA_POMOJET")." <a href=\"http://marketplace.1c-bitrix.ru\" target=_blank>marketplace.1c-bitrix.ru</a>.".
