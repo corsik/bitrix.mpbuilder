@@ -5,6 +5,8 @@ namespace Bitrix\MpBuilder;
 require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_before.php");
 require_once($_SERVER["DOCUMENT_ROOT"] . BX_ROOT . "/modules/main/prolog.php");
 
+use Bitrix\Main\Loader;
+use Bitrix\Main\Config\Option;
 use Bitrix\Main\Text\Encoding;
 
 global $USER;
@@ -21,13 +23,23 @@ $APPLICATION->SetTitle(GetMessage("BITRIX_MPBUILDER_SAG_CETVERTYY_SBORK"));
 require($_SERVER["DOCUMENT_ROOT"] . BX_ROOT . "/modules/main/include/prolog_admin_after.php");
 
 $aTabs = [
-    ["DIV" => "tab1", "TAB" => GetMessage("BITRIX_MPBUILDER_SAG"), "ICON" => "main_user_edit", "TITLE" => GetMessage("BITRIX_MPBUILDER_SBORKA_OBNOVLENIA")],
+    [
+        "DIV" => "tab1",
+        "TAB" => GetMessage("BITRIX_MPBUILDER_SAG"),
+        "ICON" => "main_user_edit",
+        "TITLE" => GetMessage("BITRIX_MPBUILDER_SBORKA_OBNOVLENIA"),
+    ],
 ];
 $editTab = new \CAdminTabControl("editTab", $aTabs);
 
-echo BeginNote() .
-    GetMessage("BITRIX_MPBUILDER_V_ARHIV_POPADUT_FAYL") . ' install/version.php. ' . GetMessage("BITRIX_MPBUILDER_OBNOVLENIE_NEOBHODIM") . ' <a href="https://partners.1c-bitrix.ru/personal/modules/modules.php?ACTIVE=Y" target="_blank">marketplace</a>.' .
-    EndNote();
+echo BeginNote()
+    . GetMessage("BITRIX_MPBUILDER_V_ARHIV_POPADUT_FAYL")
+    . ' install/version.php. '
+    . GetMessage(
+        "BITRIX_MPBUILDER_OBNOVLENIE_NEOBHODIM"
+    )
+    . ' <a href="https://partners.1c-bitrix.ru/personal/modules/modules.php?ACTIVE=Y" target="_blank">marketplace</a>.'
+    . EndNote();
 
 $moduleId = '';
 $arModuleVersion = [];
@@ -62,7 +74,11 @@ if ($moduleId) {
         $version = $_REQUEST['version'];
 
         if ($bCustomNameSpace = array_key_exists('NAMESPACE', $_REQUEST)) {
-            \COption::SetOptionString($moduleId, 'NAMESPACE', $NAMESPACE = str_replace(['/', '\\', ' '], '', $_REQUEST['NAMESPACE']));
+            \COption::SetOptionString(
+                $moduleId,
+                'NAMESPACE',
+                $NAMESPACE = str_replace(['/', '\\', ' '], '', $_REQUEST['NAMESPACE'])
+            );
         }
 
         if (!$version) {
@@ -73,13 +89,22 @@ if ($moduleId) {
             $strError .= GetMessage("BITRIX_MPBUILDER_NE_UKAZANO_OPISANIE") . '<br>';
         }
 
-
         if (!$strError && $_REQUEST['store_version']) {
 
-            rename($moduleBuilder->getRootFileVersionPath(), $moduleBuilder->getRootDirPath() . '/install/_version.php');
+            rename(
+                $moduleBuilder->getRootFileVersionPath(),
+                $moduleBuilder->getRootDirPath() . '/install/_version.php'
+            );
 
-            if (!file_put_contents($moduleBuilder->getRootFileVersionPath(), $moduleBuilder->getContextVersion($version))) {
-                $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ") . $moduleBuilder->getRootFileVersionPath() . '<br>';
+            if (
+                !file_put_contents(
+                    $moduleBuilder->getRootFileVersionPath(),
+                    $moduleBuilder->getContextVersion($version)
+                )
+            ) {
+                $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ")
+                    . $moduleBuilder->getRootFileVersionPath()
+                    . '<br>';
             }
         }
 
@@ -105,14 +130,20 @@ if ($moduleId) {
 
                         if (is_dir($f = $bitrixComponentRootPath . '/' . $NAMESPACE . '/' . $item)) {
                             $arTmp = Filesystem::getFiles($f, [], true);
-                            foreach ($arTmp as $file)
+                            foreach ($arTmp as $file) {
                                 $ar[] = '/' . $NAMESPACE . '/' . $item . $file;
+                            }
                         }
                     }
                     closedir($componentDir);
                 } else {
                     while (false !== $item = readdir($componentDir)) {
-                        if ($item == '.' || $item == '..' || !is_dir($path0 = $moduleBuilder->getRootDirComponentPath() . '/' . $item)) {
+                        if (
+                            $item == '.' || $item == '..'
+                            || !is_dir(
+                                $path0 = $moduleBuilder->getRootDirComponentPath() . '/' . $item
+                            )
+                        ) {
                             continue;
                         }
 
@@ -122,7 +153,11 @@ if ($moduleId) {
                                 continue;
                             }
 
-                            $arTmp = Filesystem::getFiles($bitrixComponentRootPath . '/' . $item . '/' . $item0, [], true);
+                            $arTmp = Filesystem::getFiles(
+                                $bitrixComponentRootPath . '/' . $item . '/' . $item0,
+                                [],
+                                true
+                            );
 
                             foreach ($arTmp as $file) {
                                 $ar[] = '/' . $item . '/' . $item0 . $file;
@@ -135,7 +170,11 @@ if ($moduleId) {
 
                 foreach ($ar as $file) {
                     $from = $bitrixComponentRootPath . $file;
-                    $to = $moduleBuilder->getRootDirComponentPath() . ($bCustomNameSpace ? preg_replace('#^/[^/]+#', '', $file) : $file);
+                    $to = $moduleBuilder->getRootDirComponentPath() . ($bCustomNameSpace ? preg_replace(
+                            '#^/[^/]+#',
+                            '',
+                            $file
+                        ) : $file);
 
                     if (!file_exists($to) || filemtime($from) > filemtime($to)) {
                         if (!is_dir($d = dirname($to)) && !mkdir($d, BX_DIR_PERMISSIONS, true)) {
@@ -162,7 +201,13 @@ if ($moduleId) {
 
                 if ($file === '/install/version.php') {
 
-                    if ($_REQUEST['store_version'] && !file_put_contents($fromFile, $moduleBuilder->getContextVersion($version))) {
+                    if (
+                        $_REQUEST['store_version']
+                        && !file_put_contents(
+                            $fromFile,
+                            $moduleBuilder->getContextVersion($version)
+                        )
+                    ) {
                         $strError .= GetMessage("BITRIX_MPBUILDER_NOT_WRITE_NEW_VERSION") . $fromFile . '<br>';
                     }
 
@@ -206,8 +251,9 @@ if ($moduleId) {
             if (!$strError) {
                 $descriptionFilePath = $moduleBuilder->getRootDirVersionPath($version) . '/description.ru';
                 $description = $_REQUEST['description'];
-                if (defined('BX_UTF') && BX_UTF)
+                if (defined('BX_UTF') && BX_UTF) {
                     $description = Encoding::convertEncoding($description, 'utf8', 'cp1251');
+                }
                 if (!file_put_contents($descriptionFilePath, $description)) {
                     $strError .= GetMessage("BITRIX_MPBUILDER_NE_UDALOSQ_ZAPISATQ") . $descriptionFilePath . '<br>';
                 } else {
@@ -228,7 +274,10 @@ if ($moduleId) {
                 }
             }
 
-            Filesystem::packFolder($moduleBuilder->getRootDirVersionPath($version), $moduleBuilder->getRootTmpDirPath());
+            Filesystem::packFolder(
+                $moduleBuilder->getRootDirVersionPath($version),
+                $moduleBuilder->getRootTmpDirPath()
+            );
         }
 
         if (!$strError) {
@@ -238,26 +287,56 @@ if ($moduleId) {
             $href = "/bitrix/admin/fileman_file_download.php?path=" . UrlEncode($link);
             \CAdminMessage::ShowMessage([
                 "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OBNOVLENIE_SOBRANO"),
-                "DETAILS" =>
-                    '<a target="_blank" href="' . $filemanLink . '">' . GetMessage("BITRIX_MPBUILDER_FOLDER_OBNOVLENIA_MOJ") . '</a>.' .
-                    '<br>' . GetMessage("BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ") . ': <a href="' . $href . '">' . $link . '</a>.' .
-                    '<br><a target="_blank" href="https://partners.1c-bitrix.ru/personal/modules/deploy.php?ID=' . urlencode($moduleId) . '">' . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V") . ' marketplace</a> ' .
-                    '<br><input type=button value="' . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA") . '" onclick="if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU") . ' &quot;/bitrix/tmp/' . $moduleId . '&quot; ' . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE") . '?\'))document.location=\'?action=delete&' . bitrix_sessid_get() . '\'">' .
-                    $strFileList,
+                "DETAILS" => '<a target="_blank" href="'
+                    . $filemanLink
+                    . '">'
+                    . GetMessage(
+                        "BITRIX_MPBUILDER_FOLDER_OBNOVLENIA_MOJ"
+                    )
+                    . '</a>.'
+                    . '<br>'
+                    . GetMessage(
+                        "BITRIX_MPBUILDER_ARHIV_OBNOVLENIA_MOJ"
+                    )
+                    . ': <a href="'
+                    . $href
+                    . '">'
+                    . $link
+                    . '</a>.'
+                    . '<br><a target="_blank" href="https://partners.1c-bitrix.ru/personal/modules/deploy.php?ID='
+                    . urlencode($moduleId)
+                    . '">'
+                    . GetMessage("BITRIX_MPBUILDER_ZAGRUZITQ_V")
+                    . ' marketplace</a> '
+                    . '<br><input type=button value="'
+                    . GetMessage("BITRIX_MPBUILDER_UDALITQ_VREMENNYE_FA")
+                    . '" onclick="if(confirm(\''
+                    . GetMessage("BITRIX_MPBUILDER_UDALITQ_PAPKU")
+                    . ' &quot;/bitrix/tmp/'
+                    . $moduleId
+                    . '&quot; '
+                    . GetMessage("BITRIX_MPBUILDER_I_EE_SODERJIMOE")
+                    . '?\'))document.location=\'?action=delete&'
+                    . bitrix_sessid_get()
+                    . '\'">'
+                    . $strFileList,
                 "TYPE" => "OK",
-                "HTML" => true]);
+                "HTML" => true,
+            ]);
         } else {
             \CAdminMessage::ShowMessage([
                 "MESSAGE" => GetMessage("BITRIX_MPBUILDER_OSIBKA_OBRABOTKI_FAY"),
                 "DETAILS" => $strError,
                 "TYPE" => "ERROR",
-                "HTML" => true]);
+                "HTML" => true,
+            ]);
         }
     }
 }
 
 ?>
-<form action="<? echo $APPLICATION->GetCurPage() ?>?lang=<?= LANG ?>" method="POST"
+<form action="<?
+echo $APPLICATION->GetCurPage() ?>?lang=<?= LANG ?>" method="POST"
       enctype="multipart/form-data" name="builder_form">
     <?
     echo bitrix_sessid_post();
@@ -280,7 +359,13 @@ if ($moduleId) {
                         continue;
                     }
 
-                    $arModules[$item] = '<option value="' . $item . '" ' . ($moduleId == $item ? 'selected' : '') . '>' . $item . '</option>';
+                    $arModules[$item] = '<option value="'
+                        . $item
+                        . '" '
+                        . ($moduleId == $item ? 'selected' : '')
+                        . '>'
+                        . $item
+                        . '</option>';
                 }
 
                 closedir($modulesDer);
@@ -298,15 +383,32 @@ if ($moduleId) {
             <td valign=top><?= GetMessage("BITRIX_MPBUILDER_VERSIA_OBNOVLENIA") ?></td>
             <td>
                 <input name="version"
-                       value="<?= ($version = $_REQUEST['version'] ? htmlspecialcharsbx($_REQUEST['version']) : VersionUp($arModuleVersion['VERSION'])) ?>">
+                       value="<?= ($version = $_REQUEST['version'] ? htmlspecialcharsbx($_REQUEST['version'])
+                           : VersionUp($arModuleVersion['VERSION'])) ?>">
                 <label><input type=checkbox
-                              name=store_version <?= $_REQUEST['store_version'] ? 'checked' : '' ?>> <?= GetMessage("BITRIX_MPBUILDER_OBNOVITQ_DATU_I_VERS") ?>
+                              name=store_version <?= $_REQUEST['store_version'] ? 'checked' : '' ?>> <?= GetMessage(
+                        "BITRIX_MPBUILDER_OBNOVITQ_DATU_I_VERS"
+                    ) ?>
                 </label>
                 <?
                 if (file_exists($f = $moduleBuilder->getRootDirPath() . '/install/_version.php')) {
                     include($f);
-                    if ($arModuleVersion['VERSION'] != $version)
-                        echo '<br>' . GetMessage("BITRIX_MPBUILDER_DOSTUPNA_VERSIA") . htmlspecialcharsbx($arModuleVersion['VERSION']) . '</b> ' . GetMessage("BITRIX_MPBUILDER_FILE") . ' version.php. <a href="javascript:if(confirm(\'' . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ_STARUU") . '?\'))document.location=\'?action=version_restore&' . bitrix_sessid_get() . '\'">' . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ") . '</a>.';
+                    if ($arModuleVersion['VERSION'] != $version) {
+                        echo '<br>'
+                            . GetMessage("BITRIX_MPBUILDER_DOSTUPNA_VERSIA")
+                            . htmlspecialcharsbx(
+                                $arModuleVersion['VERSION']
+                            )
+                            . '</b> '
+                            . GetMessage("BITRIX_MPBUILDER_FILE")
+                            . ' version.php. <a href="javascript:if(confirm(\''
+                            . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ_STARUU")
+                            . '?\'))document.location=\'?action=version_restore&'
+                            . bitrix_sessid_get()
+                            . '\'">'
+                            . GetMessage("BITRIX_MPBUILDER_VOSSTANOVITQ")
+                            . '</a>.';
+                    }
                 }
                 ?>
             </td>
@@ -319,7 +421,13 @@ if ($moduleId) {
                 if (!file_exists($moduleBuilder->getRootDirComponentPath())) {
                     echo GetMessage("BITRIX_MPBUILDER_MODULQ_NE_SODERJIT_K") . ' /install';
                 } else {
-                    echo '<label><input type=checkbox onchange="if(ob=document.getElementById(\'NAMESPACE\'))ob.disabled=!this.checked;" name=components ' . ($_REQUEST['components'] ? 'checked' : '') . '> ' . GetMessage("BITRIX_MPBUILDER_SKOPIROVATQ_IZMENENN") . ' /bitrix/components/ ' . GetMessage("BITRIX_MPBUILDER_V_ADRO_MODULA") . '</label>';
+                    echo '<label><input type=checkbox onchange="if(ob=document.getElementById(\'NAMESPACE\'))ob.disabled=!this.checked;" name=components '
+                        . ($_REQUEST['components'] ? 'checked' : '')
+                        . '> '
+                        . GetMessage("BITRIX_MPBUILDER_SKOPIROVATQ_IZMENENN")
+                        . ' /bitrix/components/ '
+                        . GetMessage("BITRIX_MPBUILDER_V_ADRO_MODULA")
+                        . '</label>';
 
                     $componentDir = opendir($moduleBuilder->getRootDirComponentPath());
                     while (false !== $item = readdir($componentDir)) {
@@ -343,8 +451,8 @@ if ($moduleId) {
             ?>
             <tr>
                 <td><?= GetMessage("BITRIX_MPBUILDER_PROSTRANSTVO_IMEN_KO") ?></td>
-                <td>/bitrix/components/<input name=NAMESPACE id=NAMESPACE
-                                              value="<?= htmlspecialcharsbx($NAMESPACE) ?>" <?= $_REQUEST['components'] ? '' : 'disabled' ?>>
+                <td>/bitrix/components/<input name=NAMESPACE id=NAMESPACE value="<?= htmlspecialcharsbx($NAMESPACE) ?>" <?= $_REQUEST['components']
+                        ? '' : 'disabled' ?>>
                 </td>
             </tr>
             <tr>
@@ -362,10 +470,21 @@ if ($moduleId) {
             <td>
                 <?
                 if (!$description = $_REQUEST['description']) {
-                    if (file_exists($f = $_SERVER['DOCUMENT_ROOT'] . BX_ROOT . '/tmp/' . $moduleId . '/' . $version . '/description.ru')) {
+                    if (
+                        file_exists(
+                            $f = $_SERVER['DOCUMENT_ROOT']
+                                . BX_ROOT
+                                . '/tmp/'
+                                . $moduleId
+                                . '/'
+                                . $version
+                                . '/description.ru'
+                        )
+                    ) {
                         $description = file_get_contents($f);
-                        if (defined('BX_UTF') && BX_UTF)
+                        if (defined('BX_UTF') && BX_UTF) {
                             $description = $APPLICATION->ConvertCharset($description, 'cp1251', 'utf8');
+                        }
                     }
                 }
 
@@ -376,8 +495,18 @@ if ($moduleId) {
                 }
 
                 ?>
-                <textarea name=description style="width:100%"
-                          rows=10><?= htmlspecialcharsbx($description) ?></textarea>
+                <textarea id="description__editor" name=description style="width:100%" rows=10><?= htmlspecialcharsbx(
+                        $description
+                    ) ?></textarea>
+                <?
+                if (Option::get('fileman', "use_code_editor", "Y") == "Y" && Loader::includeModule('fileman')) {
+                    \CCodeEditor::Show([
+                        'textareaId' => 'description__editor',
+                        'height' => 350,
+                        'forceSyntax' => 'php',
+                    ]);
+                }
+                ?>
             </td>
         </tr>
         <tr>
@@ -388,16 +517,28 @@ if ($moduleId) {
             <td valign=top><?= GetMessage("BITRIX_MPBUILDER_SKRIPT_OBNOVLENIA") ?> updater.php:</td>
             <td>
                 <?
-                if ($_SERVER['REQUEST_METHOD'] == 'POST')
+                if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $updater = $_REQUEST['updater'];
-                else {
-                    $updater = file_get_contents($_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/bitrix.mpbuilder/samples/_updater.php');
+                } else {
+                    $updater = file_get_contents(
+                        $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/bitrix.mpbuilder/samples/_updater.php'
+                    );
                     $updater = str_replace('{MODULE_ID}', $moduleId, $updater);
                     $updater = str_replace('{NAMESPACE}', $bCustomNameSpace ? $NAMESPACE : '', $updater);
                 }
                 ?>
-                <textarea name=updater style="width:100%"
-                          rows=10><?= htmlspecialcharsbx($updater) ?></textarea>
+                <textarea id="updater__editor" name=updater style="width:100%" rows=10><?= htmlspecialcharsbx(
+                        $updater
+                    ) ?></textarea>
+                <?
+                if (Option::get('fileman', "use_code_editor", "Y") === "Y" && Loader::includeModule('fileman')) {
+                    \CCodeEditor::Show([
+                        'textareaId' => 'updater__editor',
+                        'height' => 350,
+                        'forceSyntax' => 'php',
+                    ]);
+                }
+                ?>
             </td>
         </tr>
         <?
