@@ -1,9 +1,8 @@
-<?
+<?php
 if (IsModuleInstalled('{MODULE_ID}')) {
     if (is_dir(dirname(__FILE__) . '/install/components')) {
         $updater->CopyFiles("install/components", "components/{NAMESPACE}");
     }
-
 
     if (is_dir(dirname(__FILE__) . '/install/js')) {
         $updater->CopyFiles("install/js", "js/{MODULE_ID}/");
@@ -12,7 +11,6 @@ if (IsModuleInstalled('{MODULE_ID}')) {
 	if (is_dir(dirname(__FILE__) . '/install/css')) {
         $updater->CopyFiles("install/css", "css/{MODULE_ID}/");
     }
-
 }
 
 
