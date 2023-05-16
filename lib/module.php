@@ -53,7 +53,7 @@ class Module
 
     public function getContextVersion(string $version): string
     {
-        return '<?' . "\n" .
+        return '<?php' . "\n" .
             '$arModuleVersion = [' . "\n" .
             '	"VERSION" => "' . EscapePHPString($version) . '",' . "\n" .
             '	"VERSION_DATE" => "' . date('Y-m-d H:i:s') . '"' . "\n" .

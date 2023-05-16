@@ -139,7 +139,7 @@ if ($_POST['save'] && check_bitrix_sessid())
 			$strError .= GetMessage("BITRIX_MPBUILDER_FAYL_SUSESTVUET") . $f . '<br>';
 		}
 		elseif (!file_put_contents($f,
-			'<' . '?' . "\n" .
+			'<' . '?php' . "\n" .
 			'$MESS["' . $module . '_MODULE_NAME"] = "' . EscapePHPString($moduleName) . '";' . "\n" .
 			'$MESS["' . $module . '_MODULE_DESC"] = "' . EscapePHPString($moduleDesc) . '";' . "\n" .
 			'$MESS["' . $module . '_PARTNER_NAME"] = "' . EscapePHPString($partnerName) . '";' . "\n" .
@@ -154,12 +154,12 @@ if ($_POST['save'] && check_bitrix_sessid())
 			$strError .= GetMessage("BITRIX_MPBUILDER_FAYL_SUSESTVUET") . $f . '<br>';
 		}
 		elseif (!file_put_contents($f,
-			'<' . '?' . "\n" .
+			'<?php' . "\n" .
 			'$arModuleVersion = array(' . "\n" .
 			'	"VERSION" => "1.0.0",' . "\n" .
 			'	"VERSION_DATE" => "' . date('Y-m-d H:i:s') . '"' . "\n" .
 			');' . "\n" .
-			'?' . '>'
+			'?>'
 		))
 		{
 			$strError .= GetMessage("BITRIX_MPBUILDER_OSIBKA_ZAPISI_V_FAYL") . $f . '<br>';
