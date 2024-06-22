@@ -179,7 +179,7 @@ if ($moduleId)
 						$dir0 = opendir($path0);
 						while (false !== $item0 = readdir($dir0))
 						{
-							if ($item0 == '.' || $item0 == '..' || !is_dir($f = $path0 . '/' . $item0))
+							if ($item0 === '.' || $item0 === '..' || !is_dir($f = $path0 . '/' . $item0))
 							{
 								continue;
 							}
@@ -283,7 +283,7 @@ if ($moduleId)
 				}
 				else
 				{
-					if (substr($file, -4) == '.php' && Filesystem::getStringCharset($fileContents) == 'utf8')
+					if (substr($file, -4) === '.php' && Filesystem::getStringCharset($fileContents) === 'utf8')
 					{
 						$fileContents = Encoding::convertEncoding($fileContents, 'utf8', 'cp1251');
 					}
