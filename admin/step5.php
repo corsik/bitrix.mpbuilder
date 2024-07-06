@@ -5,6 +5,7 @@ namespace Bitrix\MpBuilder;
 require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_admin_before.php");
 require_once($_SERVER["DOCUMENT_ROOT"] . BX_ROOT . "/modules/main/prolog.php");
 
+use Bitrix\Main\Application;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Text\Encoding;
@@ -18,8 +19,12 @@ if (!$USER->IsAdmin())
 	$APPLICATION->AuthForm();
 }
 
+Loader::includeModule('fileman');
+
 IncludeModuleLangFile(__FILE__);
-$MODULE_ID = 'bitrix.mpbuilder';
+
+$request = Application::getInstance()->getContext()->getRequest();
+$session = Application::getInstance()->getSession();
 
 $APPLICATION->SetTitle(Loc::getMessage("BITRIX_MPBUILDER_SAG_CETVERTYY_SBORK"));
 require($_SERVER["DOCUMENT_ROOT"] . BX_ROOT . "/modules/main/include/prolog_admin_after.php");
@@ -44,26 +49,21 @@ echo BeginNote()
 	. ' <a href="https://partners.1c-bitrix.ru/personal/modules/modules.php?ACTIVE=Y" target="_blank">marketplace</a>.'
 	. EndNote();
 
-$moduleId = '';
 $arModuleVersion = [];
-$_REQUEST['module_id'] = str_replace(['..', '/', '\\'], '', $_REQUEST['module_id']);
+if ($request->get('module_id'))
+{
+	$session->set('module_id', $request->get('module_id'));
+}
 
-if ($_REQUEST['module_id'] && is_dir($_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/' . $_REQUEST['module_id']))
-{
-	$moduleId = $_SESSION['mpbuilder']['module_id'] = $_REQUEST['module_id'];
-}
-else
-{
-	$moduleId = $_SESSION['mpbuilder']['module_id'];
-}
+$moduleId = $session->get('module_id');
+$action = $request->get('action');
 
 if ($moduleId)
 {
-
 	$moduleBuilder = new Module($moduleId);
 	$bitrixComponentRootPath = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/components';
 
-	if ($_REQUEST['action'] === 'version_restore' && check_bitrix_sessid())
+	if ($action === 'version_restore' && check_bitrix_sessid())
 	{
 		rename($moduleBuilder->getRootDirPath() . '/install/_version.php', $moduleBuilder->getRootFileVersionPath());
 	}
@@ -73,13 +73,13 @@ if ($moduleId)
 		include($moduleBuilder->getRootFileVersionPath());
 	}
 
-	$NAMESPACE = \COption::GetOptionString($moduleId, 'NAMESPACE', '');
+	$NAMESPACE = Option::get($moduleId, 'NAMESPACE', '');
 
-	if ($_REQUEST['action'] === 'delete' && check_bitrix_sessid())
+	if ($action === 'delete' && check_bitrix_sessid())
 	{
 		Filesystem::rmDir($moduleBuilder->getRootTmpDirPath());
 	}
-	elseif ($_POST['save'] && check_bitrix_sessid())
+	elseif ($request->isPost() && $request->getPost('save') && check_bitrix_sessid())
 	{
 		$strError = '';
 		$strFileList = '<br><br> <b>' . Loc::getMessage("BITRIX_MPBUILDER_SPISOK_FAYLOV_V_ARHI") . ':</b><br>';
@@ -103,7 +103,7 @@ if ($moduleId)
 			$strError .= Loc::getMessage("BITRIX_MPBUILDER_NE_UKAZANO_OPISANIE") . '<br>';
 		}
 
-		if (!$strError && $_REQUEST['store_version'])
+		if (!$strError && $request->get('store_version'))
 		{
 
 			rename(
@@ -131,7 +131,10 @@ if ($moduleId)
 				Filesystem::rmDir($moduleBuilder->getRootTmpDirPath());
 			}
 
-			mkdir($moduleBuilder->getRootDirVersionPath($version), BX_DIR_PERMISSIONS, true);
+			if (!mkdir($concurrentDirectory = $moduleBuilder->getRootDirVersionPath($version), BX_DIR_PERMISSIONS, true) && !is_dir($concurrentDirectory))
+			{
+				throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+			}
 
 			if (function_exists('mb_internal_encoding'))
 			{
@@ -254,9 +257,9 @@ if ($moduleId)
 						$strError .= Loc::getMessage("BITRIX_MPBUILDER_NOT_WRITE_NEW_VERSION") . $fromFile . '<br>';
 					}
 
-					if (!file_exists($dir = dirname($toFile)))
+					if (!file_exists($dir = dirname($toFile)) && !mkdir($dir, BX_DIR_PERMISSIONS, true) && !is_dir($dir))
 					{
-						mkdir($dir, BX_DIR_PERMISSIONS, true);
+						throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
 					}
 
 					if (!file_put_contents($toFile, $moduleBuilder->getContextVersion($version)))
@@ -288,9 +291,9 @@ if ($moduleId)
 						$fileContents = Encoding::convertEncoding($fileContents, 'utf8', 'cp1251');
 					}
 
-					if (!file_exists($dir = dirname($toFile)))
+					if (!file_exists($dir = dirname($toFile)) && !mkdir($dir, BX_DIR_PERMISSIONS, true) && !is_dir($dir))
 					{
-						mkdir($dir, BX_DIR_PERMISSIONS, true);
+						throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
 					}
 
 					if (!file_put_contents($toFile, $fileContents))
@@ -413,10 +416,10 @@ if ($moduleId)
 	$editTab->BeginNextTab();
 	?>
 	<tr class=heading>
-		<td colspan=2><?= Loc::getMessage("BITRIX_MPBUILDER_VYBOR_MODULA") ?></td>
+		<td colspan=2><?= Loc::getMessage("CORSIK_BUILDER_STEP5_MODULE_SELECTED") ?></td>
 	</tr>
 	<tr>
-		<td><?= Loc::getMessage("BITRIX_MPBUILDER_TEKUSIY_MODULQ") ?></td>
+		<td><?= Loc::getMessage("CORSIK_BUILDER_CURRENT_MODULE") ?></td>
 		<td>
 			<select name=module_id onchange="document.location='?module_id='+this.value">
 				<?php
@@ -429,7 +432,7 @@ if ($moduleId)
 						continue;
 					}
 
-					$arModules[$item] = '<option value="' . $item . '" ' . ($moduleId == $item ? 'selected' : '') . '>' . $item . '</option>';
+					$arModules[$item] = '<option value="' . $item . '" ' . ($moduleId === $item ? 'selected' : '') . '>' . $item . '</option>';
 				}
 
 				closedir($modulesDer);
@@ -516,6 +519,7 @@ if ($moduleId)
 				?>
 			</td>
 		</tr>
+
 		<?php
 		if ($bCustomNameSpace)
 		{
@@ -565,11 +569,13 @@ if ($moduleId)
 					}
 				}
 				?>
-				<textarea id="description__editor" name=description style="width:100%" rows=10><?= htmlspecialcharsbx(
-						$description
-					) ?></textarea>
+				<textarea id="description__editor"
+						name=description
+						style="width:100%"
+						rows=10><?= htmlspecialcharsbx($description) ?>
+				</textarea>
 				<?php
-				if (Option::get('fileman', "use_code_editor", "Y") === "Y" && Loader::includeModule('fileman'))
+				if (Options::getBoolOptionByName('fileman', "use_code_editor", "Y"))
 				{
 					\CCodeEditor::Show([
 						'textareaId' => 'description__editor',
@@ -612,7 +618,7 @@ if ($moduleId)
 						rows=10><?= htmlspecialcharsbx($updater) ?>
 				</textarea>
 				<?php
-				if (Option::get('fileman', "use_code_editor", "Y") === "Y" && Loader::includeModule('fileman'))
+				if (Options::getBoolOptionByName('fileman', "use_code_editor", "Y"))
 				{
 					\CCodeEditor::Show([
 						'textareaId' => 'updater__editor',
