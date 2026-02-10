@@ -6,10 +6,10 @@ require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_ad
 require_once($_SERVER["DOCUMENT_ROOT"] . BX_ROOT . "/modules/main/prolog.php");
 
 use Bitrix\Main\Application;
-use Bitrix\Main\Loader;
 use Bitrix\Main\Config\Option;
-use Bitrix\Main\Text\Encoding;
+use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\Text\Encoding;
 
 global $USER;
 global $APPLICATION;
@@ -447,7 +447,7 @@ if ($moduleId)
 	if ($moduleId)
 	{
 		$actualVersion = $version ? htmlspecialcharsbx($version) : VersionUp($arModuleVersion['VERSION']);
-		$updatesModule = $_SERVER['DOCUMENT_ROOT'] . "/dev/updates/$actualVersion";
+		$updatesModule = $_SERVER['DOCUMENT_ROOT'] . "/dev/updates/$moduleId/$actualVersion";
 		?>
 		<tr>
 			<td valign=top><?= Loc::getMessage("BITRIX_MPBUILDER_VERSIA_OBNOVLENIA") ?></td>
