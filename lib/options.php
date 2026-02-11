@@ -7,9 +7,9 @@ use Bitrix\Main\Config\Option;
 class Options
 {
 	public static function getBoolOptionByName(
-		string      $moduleId,
-		string      $name,
-		?string     $default,
+		string $moduleId,
+		string $name,
+		?string $default,
 		string|bool $siteId = false
 	): bool
 	{
