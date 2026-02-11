@@ -1,0 +1,15 @@
+{
+  "exclude": [
+    "node_modules",
+    "vendor",
+    "tests",
+    "*.log",
+    ".env",
+    ".env.local",
+    "dist",
+    "build",
+    "coverage",
+    "phpunit.xml",
+    "jest.config.js"
+  ]
+}

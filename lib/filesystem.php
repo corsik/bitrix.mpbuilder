@@ -2,13 +2,11 @@
 
 namespace Bitrix\MpBuilder;
 
-use Bitrix\Main\Text\Encoding;
 use Bitrix\Main\Config\Option;
+use Bitrix\Main\Text\Encoding;
 
 class Filesystem
 {
-	private static array $excludedFiles = ['.', '..', '.svn', '.hg', '.git', '.DS_Store'];
-
 	public static function packFolder(string $archivePath, string $removePath): void
 	{
 		global $USER;
@@ -27,9 +25,9 @@ class Filesystem
 
 	public static function getFiles(
 		string $path,
-		array  $arFilter = [],
-		bool   $bAllFiles = false,
-		bool   $recursive = false
+		array $arFilter = [],
+		bool $bAllFiles = false,
+		bool $recursive = false
 	): array
 	{
 		static $len;
@@ -43,7 +41,7 @@ class Filesystem
 		{
 			while (false !== $item = readdir($dir))
 			{
-				if (in_array($item, array_merge(self:: $excludedFiles, $arFilter), true))
+				if (in_array($item, array_merge(ExcludedFiles::getAll(), $arFilter), true))
 				{
 					continue;
 				}
@@ -51,14 +49,11 @@ class Filesystem
 				$dirFiles = $path . '/' . $item;
 				if (is_dir($dirFiles))
 				{
-					$retVal = [...$retVal, ...Filesystem::getFiles($dirFiles, $arFilter, $bAllFiles, true)];
+					$retVal = [...$retVal, ...self::getFiles($dirFiles, $arFilter, $bAllFiles, true)];
 				}
-				else
+				else if ($bAllFiles || str_ends_with($dirFiles, '.php'))
 				{
-					if ($bAllFiles || substr($dirFiles, -4) === '.php')
-					{
-						$retVal[] = str_replace('\\', '/', substr($dirFiles, $len));
-					}
+					$retVal[] = str_replace('\\', '/', substr($dirFiles, $len));
 				}
 			}
 

@@ -40,7 +40,7 @@ $aTabs = [
 $editTab = new \CAdminTabControl("editTab", $aTabs);
 
 $version = $_REQUEST['version'];
-$actualVersion = null;
+$actualVersion = $version ?: '';
 
 echo BeginNote()
 	. Loc::getMessage("BITRIX_MPBUILDER_V_ARHIV_POPADUT_FAYL")
@@ -75,6 +75,10 @@ if ($moduleId)
 
 	$NAMESPACE = Option::get($moduleId, 'NAMESPACE', '');
 
+	$actualVersion = $version ? htmlspecialcharsbx($version) : VersionUp($arModuleVersion['VERSION']);
+	$configVersion = $version ?: VersionUp($arModuleVersion['VERSION']);
+	$updatesManager = new Updates($moduleId, $configVersion);
+
 	if ($action === 'delete' && check_bitrix_sessid())
 	{
 		Filesystem::rmDir($moduleBuilder->getRootTmpDirPath());
@@ -83,6 +87,8 @@ if ($moduleId)
 	{
 		$strError = '';
 		$strFileList = '<br><br> <b>' . Loc::getMessage("BITRIX_MPBUILDER_SPISOK_FAYLOV_V_ARHI") . ':</b><br>';
+
+		$updatesManager->loadExclusions();
 
 		if ($bCustomNameSpace = array_key_exists('NAMESPACE', $_REQUEST))
 		{
@@ -245,7 +251,6 @@ if ($moduleId)
 
 				if ($file === '/install/version.php')
 				{
-
 					if (
 						$_REQUEST['store_version']
 						&& !file_put_contents(
@@ -443,11 +448,11 @@ if ($moduleId)
 			</select>
 		</td>
 	</tr>
+
 	<?php
 	if ($moduleId)
 	{
-		$actualVersion = $version ? htmlspecialcharsbx($version) : VersionUp($arModuleVersion['VERSION']);
-		$updatesModule = $_SERVER['DOCUMENT_ROOT'] . "/dev/updates/$moduleId/$actualVersion";
+
 		?>
 		<tr>
 			<td valign=top><?= Loc::getMessage("BITRIX_MPBUILDER_VERSIA_OBNOVLENIA") ?></td>
@@ -549,12 +554,10 @@ if ($moduleId)
 				$description = '<ul>
 	<li></li>
 </ul>';
-				$repoDescription = "$updatesModule/description.ru";
 				$descriptionPath = $_SERVER['DOCUMENT_ROOT'] . BX_ROOT . "/tmp/$moduleId/$version/description.ru";
-
-				if (file_exists($repoDescription))
+				if ($updatesManager->hasDescription())
 				{
-					$description = file_get_contents($repoDescription);
+					$description = $updatesManager->getDescription();
 				}
 				elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $_REQUEST['updater'])
 				{
@@ -594,14 +597,13 @@ if ($moduleId)
 			<td valign=top><?= Loc::getMessage("BITRIX_MPBUILDER_SKRIPT_OBNOVLENIA") ?> updater.php:</td>
 			<td>
 				<?php
-				$repoUpdater = "$updatesModule/updater.php";
-				if (file_exists($repoUpdater))
-				{
-					$updater = file_get_contents($repoUpdater);
-				}
-				elseif ($_SERVER['REQUEST_METHOD'] === 'POST')
+				if ($_SERVER['REQUEST_METHOD'] === 'POST')
 				{
 					$updater = $_REQUEST['updater'];
+				}
+				elseif ($updatesManager->hasUpdater())
+				{
+					$updater = $updatesManager->getUpdater();
 				}
 				else
 				{
