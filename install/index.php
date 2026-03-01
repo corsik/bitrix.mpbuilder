@@ -28,7 +28,6 @@ Class bitrix_mpbuilder extends CModule
 	{
 		RegisterModuleDependences('main', 'OnBuildGlobalMenu', self::MODULE_ID, 'CBitrixMpBuilder', 'OnBuildGlobalMenu');
 
-		// set exclude mask
 		if (CModule::IncludeModule('security'))
 		{
 			$rs = CSecurityFilterMask::GetList();
@@ -57,7 +56,6 @@ Class bitrix_mpbuilder extends CModule
 	{
 		UnRegisterModuleDependences('main', 'OnBuildGlobalMenu', self::MODULE_ID, 'CBitrixMpBuilder', 'OnBuildGlobalMenu');
 
-		// unset exclude mask
 		if (CModule::IncludeModule('security'))
 		{
 			$rs = CSecurityFilterMask::GetList();
