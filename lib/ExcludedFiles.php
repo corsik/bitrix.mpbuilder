@@ -77,17 +77,22 @@ class ExcludedFiles
 	public static function matches(string $filename): bool
 	{
 		$filename = trim($filename);
+		$normalized = ltrim($filename, '/');
+		$basename = basename($filename);
 
 		foreach (self::getAll() as $pattern)
 		{
 			$pattern = trim($pattern);
 
-			if ($filename === $pattern)
+			if ($normalized === $pattern || $basename === $pattern)
 			{
 				return true;
 			}
 
-			if (self::matchesPattern($filename, $pattern))
+			if (
+				self::matchesPattern($normalized, $pattern)
+				|| self::matchesPattern($basename, $pattern)
+			)
 			{
 				return true;
 			}

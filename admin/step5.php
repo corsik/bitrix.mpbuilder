@@ -76,6 +76,10 @@ if ($moduleId)
 		$strFileList = '<br><br> <b>' . GetMessage("BITRIX_MPBUILDER_SPISOK_FAYLOV_V_ARHI") . ':</b><br>';
 		$version = $_REQUEST['version'];
 
+		$configVersion = $version ?: VersionUp($arModuleVersion['VERSION']);
+		$updatesManager = new Updates($moduleId, $configVersion);
+		$updatesManager->loadExclusions();
+
 		if ($bCustomNameSpace = array_key_exists('NAMESPACE', $_REQUEST))
 		{
 			\COption::SetOptionString($moduleId, 'NAMESPACE', $NAMESPACE = str_replace([
@@ -202,7 +206,7 @@ if ($moduleId)
 				$fromFile = $moduleBuilder->getRootDirPath() . $file;
 				$toFile = $moduleBuilder->getRootDirVersionPath($version) . $file;
 
-				if ($file === '/install/_version.php')
+				if (ExcludedFiles::matches($file))
 				{
 					continue;
 				}
