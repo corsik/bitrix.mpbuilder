@@ -1,0 +1,103 @@
+<?php if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true)
+{
+	die();
+}
+
+use Bitrix\Main\Config\Option;
+use Bitrix\Main\Loader;
+use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\UI\Extension;
+use Bitrix\Main\Web\Json;
+
+Loc::loadMessages(__FILE__);
+
+$useCodeEditor = false;
+$codeEditorMessages = [];
+
+if (Option::get('fileman', 'use_code_editor', 'Y') === 'Y' && Loader::includeModule('fileman'))
+{
+	$useCodeEditor = true;
+	ob_start();
+	\CCodeEditor::Show(['textareaId' => 'mpb-code-editor-init', 'height' => 1]);
+	ob_end_clean();
+
+	$codeEditorMessages = Loc::loadLanguageFile(
+		$_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/fileman/classes/general/code_editor_js.php'
+	);
+
+	if (!is_array($codeEditorMessages))
+	{
+		$codeEditorMessages = [];
+	}
+}
+
+$langKeys = [
+	'MPBUILDER_UPDATE_NOTE',
+	'MPBUILDER_UPDATE_SELECT_MODULE',
+	'MPBUILDER_UPDATE_SELECT_MODULE_PLACEHOLDER',
+	'MPBUILDER_UPDATE_VERSION_SETTINGS',
+	'MPBUILDER_UPDATE_VERSION_LABEL',
+	'MPBUILDER_UPDATE_STORE_VERSION',
+	'MPBUILDER_UPDATE_BACKUP_AVAILABLE',
+	'MPBUILDER_UPDATE_RESTORE',
+	'MPBUILDER_UPDATE_RESTORE_CONFIRM',
+	'MPBUILDER_UPDATE_COMPONENTS',
+	'MPBUILDER_UPDATE_COPY_COMPONENTS',
+	'MPBUILDER_UPDATE_NO_COMPONENTS',
+	'MPBUILDER_UPDATE_NAMESPACE_LABEL',
+	'MPBUILDER_UPDATE_NAMESPACE_HINT',
+	'MPBUILDER_UPDATE_CONTENT',
+	'MPBUILDER_UPDATE_DESCRIPTION_LABEL',
+	'MPBUILDER_UPDATE_DESCRIPTION_HINT',
+	'MPBUILDER_UPDATE_UPDATER_LABEL',
+	'MPBUILDER_UPDATE_PREPARE_BUTTON',
+	'MPBUILDER_UPDATE_PREPARING',
+	'MPBUILDER_UPDATE_PREVIEW_TITLE',
+	'MPBUILDER_UPDATE_PREVIEW_MODULE',
+	'MPBUILDER_UPDATE_PREVIEW_VERSION',
+	'MPBUILDER_UPDATE_FILES_INCLUDED',
+	'MPBUILDER_UPDATE_FILES_EXCLUDED',
+	'MPBUILDER_UPDATE_FILES_SKIPPED',
+	'MPBUILDER_UPDATE_FILES_SINCE',
+	'MPBUILDER_UPDATE_COMPONENT_SYNC_NOTE',
+	'MPBUILDER_UPDATE_CANCEL_PREPARE',
+	'MPBUILDER_UPDATE_REPREPARE_BUTTON',
+	'MPBUILDER_UPDATE_BUILD_BUTTON',
+	'MPBUILDER_UPDATE_BUILDING',
+	'MPBUILDER_UPDATE_SUCCESS',
+	'MPBUILDER_UPDATE_ERROR',
+	'MPBUILDER_UPDATE_OPEN_FOLDER',
+	'MPBUILDER_UPDATE_DOWNLOAD_ARCHIVE',
+	'MPBUILDER_UPDATE_UPLOAD_MARKETPLACE',
+	'MPBUILDER_UPDATE_FILE_LIST',
+	'MPBUILDER_UPDATE_DELETE_TEMP',
+	'MPBUILDER_UPDATE_DELETE_CONFIRM',
+	'MPBUILDER_UPDATE_LOADING',
+];
+
+$messages = [];
+foreach ($langKeys as $key)
+{
+	$messages[$key] = Loc::getMessage($key);
+}
+
+$jsData = Json::encode([
+	'sessionModuleId' => $arResult['SESSION_MODULE_ID'],
+	'useCodeEditor' => $useCodeEditor,
+	'codeEditorMessages' => $codeEditorMessages,
+]);
+
+Extension::load([
+	'ui.vue3',
+	'ui.design-tokens',
+	'ui.icon-set.main',
+	'ui.icon-set.actions',
+]);
+
+?>
+
+<script>
+	BX.message(<?= Json::encode($messages) ?>);
+</script>
+
+<div id="mpbuilder-update-app" data-params="<?= htmlspecialcharsbx($jsData) ?>"></div>
