@@ -1,0 +1,64 @@
+<?php if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true)
+{
+	die();
+}
+
+use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\UI\Extension;
+use Bitrix\Main\Web\Json;
+
+Loc::loadMessages(__FILE__);
+
+$langKeys = [
+	'MPBUILDER_ARCHIVE_NOTE',
+	'MPBUILDER_ARCHIVE_SELECT_MODULE',
+	'MPBUILDER_ARCHIVE_SELECT_MODULE_PLACEHOLDER',
+	'MPBUILDER_ARCHIVE_VERSION_SETTINGS',
+	'MPBUILDER_ARCHIVE_VERSION_LABEL',
+	'MPBUILDER_ARCHIVE_UPDATE_VERSION',
+	'MPBUILDER_ARCHIVE_PREVIEW_BUTTON',
+	'MPBUILDER_ARCHIVE_PREVIEWING',
+	'MPBUILDER_ARCHIVE_PREVIEW_TITLE',
+	'MPBUILDER_ARCHIVE_PREVIEW_MODULE',
+	'MPBUILDER_ARCHIVE_PREVIEW_VERSION',
+	'MPBUILDER_ARCHIVE_FILES_INCLUDED',
+	'MPBUILDER_ARCHIVE_FILES_EXCLUDED',
+	'MPBUILDER_ARCHIVE_CANCEL_PREVIEW',
+	'MPBUILDER_ARCHIVE_REBUILD_PREVIEW',
+	'MPBUILDER_ARCHIVE_BUILD_BUTTON',
+	'MPBUILDER_ARCHIVE_BUILDING',
+	'MPBUILDER_ARCHIVE_SUCCESS',
+	'MPBUILDER_ARCHIVE_ERROR',
+	'MPBUILDER_ARCHIVE_OPEN_FOLDER',
+	'MPBUILDER_ARCHIVE_DOWNLOAD_ARCHIVE',
+	'MPBUILDER_ARCHIVE_UPLOAD_MARKETPLACE',
+	'MPBUILDER_ARCHIVE_FILE_LIST',
+	'MPBUILDER_ARCHIVE_DELETE_TEMP',
+	'MPBUILDER_ARCHIVE_DELETE_CONFIRM',
+	'MPBUILDER_ARCHIVE_LOADING',
+];
+
+$messages = [];
+foreach ($langKeys as $key)
+{
+	$messages[$key] = Loc::getMessage($key);
+}
+
+$jsData = Json::encode([
+	'sessionModuleId' => $arResult['SESSION_MODULE_ID'],
+]);
+
+Extension::load([
+	'ui.vue3',
+	'ui.design-tokens',
+	'ui.icon-set.main',
+	'ui.icon-set.actions',
+]);
+
+?>
+
+<script>
+	BX.message(<?= Json::encode($messages) ?>);
+</script>
+
+<div id="mpbuilder-archive-app" data-params="<?= htmlspecialcharsbx($jsData) ?>"></div>

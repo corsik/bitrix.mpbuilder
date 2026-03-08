@@ -105,6 +105,12 @@ Class bitrix_mpbuilder extends CModule
 				closedir($dir);
 			}
 		}
+
+		if (is_dir($p = $_SERVER['DOCUMENT_ROOT'].'/bitrix/modules/'.self::MODULE_ID.'/install/components'))
+		{
+			CopyDirFiles($p, $_SERVER['DOCUMENT_ROOT'].'/bitrix/components', true, true);
+		}
+
 		return true;
 	}
 
@@ -123,6 +129,9 @@ Class bitrix_mpbuilder extends CModule
 				closedir($dir);
 			}
 		}
+
+		DeleteDirFilesEx('/bitrix/components/bitrix.mpbuilder');
+
 		return true;
 	}
 
