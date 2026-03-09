@@ -1,6 +1,6 @@
 <?php
 
-namespace Bitrix\MpBuilder;
+namespace Bitrix\MpBuilder\Util;
 
 class ExcludedFiles
 {

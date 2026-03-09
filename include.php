@@ -1,6 +1,6 @@
 <?php
 
-use Bitrix\MpBuilder\Filesystem;
+use Bitrix\MpBuilder\Util\Filesystem;
 
 IncludeModuleLangFile(__FILE__);
 
