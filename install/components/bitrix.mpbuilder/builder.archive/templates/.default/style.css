@@ -9,11 +9,6 @@
 	color: var(--ui-color-text-primary);
 }
 
-@media (min-width: 1201px) {
-	.mpb-update > .mpb-update__layout:not(.mpb-update__layout--split) {
-		width: 50%;
-	}
-}
 
 /* Note */
 .mpb-update__note {
@@ -289,7 +284,7 @@
 
 .mpb-update__layout--split {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
 	align-items: start;
 	gap: var(--ui-space-inline-xl);
 }
@@ -521,5 +516,38 @@
 	to {
 		opacity: 1;
 		transform: translateY(0);
+	}
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+	.mpb-update__card-header,
+	.mpb-update__card-body {
+		padding-left: var(--ui-space-inset-md);
+		padding-right: var(--ui-space-inset-md);
+	}
+
+	.mpb-update__preview-actions {
+		flex-wrap: wrap;
+		gap: var(--ui-space-stack-xs);
+	}
+}
+
+@media (max-width: 640px) {
+	.mpb-update__card-header,
+	.mpb-update__card-body {
+		padding-left: var(--ui-space-inset-sm);
+		padding-right: var(--ui-space-inset-sm);
+	}
+
+	.mpb-update__preview-actions .mpb-update__button--primary {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.mpb-update__button {
+		padding-left: var(--ui-space-inset-md);
+		padding-right: var(--ui-space-inset-md);
 	}
 }

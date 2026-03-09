@@ -2,6 +2,8 @@
 
 namespace Bitrix\MpBuilder;
 
+use Bitrix\MpBuilder\Util\Filesystem;
+
 class Module
 {
 	private string $moduleId;
@@ -89,6 +91,40 @@ class Module
 	public function getBackupVersionPath(): string
 	{
 		return $this->getRootDirPath() . '/install/_version.php';
+	}
+
+	public function hasCustomNamespace(): bool
+	{
+		if (!file_exists($this->getRootDirComponentPath()))
+		{
+			return false;
+		}
+
+		$componentDir = opendir($this->getRootDirComponentPath());
+
+		if (!$componentDir)
+		{
+			return false;
+		}
+
+		while (false !== $item = readdir($componentDir))
+		{
+			if (Filesystem::isDot($item) || !is_dir($this->getRootDirComponentPath() . '/' . $item))
+			{
+				continue;
+			}
+
+			if (file_exists($this->getRootDirComponentPath() . '/' . $item . '/component.php'))
+			{
+				closedir($componentDir);
+
+				return true;
+			}
+		}
+
+		closedir($componentDir);
+
+		return false;
 	}
 
 	public function loadVersion(): array

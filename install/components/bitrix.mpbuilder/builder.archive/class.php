@@ -7,12 +7,18 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true)
 
 use Bitrix\Main\Engine\ActionFilter;
 use Bitrix\Main\Error;
-use Bitrix\MpBuilder\ExcludedFiles;
-use Bitrix\MpBuilder\Filesystem;
-use Bitrix\MpBuilder\Links;
+use Bitrix\Main\Loader;
+use Bitrix\MpBuilder\BaseBuilderComponent;
+use Bitrix\MpBuilder\Dto\BuildContext;
+use Bitrix\MpBuilder\Factory\BuildStrategyFactory;
 use Bitrix\MpBuilder\Module;
+use Bitrix\MpBuilder\Util\ExcludedFiles;
+use Bitrix\MpBuilder\Util\Filesystem;
+use Bitrix\MpBuilder\Util\Links;
 
-class BuilderArchiveComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
+Loader::includeModule('bitrix.mpbuilder');
+
+class BuilderArchiveComponent extends BaseBuilderComponent
 {
 	public function configureActions(): array
 	{
@@ -146,85 +152,27 @@ class BuilderArchiveComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 			return null;
 		}
 
-		$errors = [];
-		$fileList = [];
-
 		$moduleBuilder = new Module($moduleId);
-
 		$versionContent = $moduleBuilder->getContextVersion($version ?: '');
 
 		if ($version && !file_put_contents($moduleBuilder->getRootFileVersionPath(), $versionContent))
 		{
-			$errors[] = 'Failed to write version file: ' . $moduleBuilder->getRootFileVersionPath();
+			$this->errorCollection->setError(new Error('Failed to write version file: ' . $moduleBuilder->getRootFileVersionPath()));
+
+			return null;
 		}
 
-		if (empty($errors))
+		Filesystem::prepareEncoding();
+
+		$strategy = BuildStrategyFactory::createForArchive();
+		$context = new BuildContext($moduleBuilder, $version, $versionContent);
+		$result = $strategy->build($context);
+
+		if (!$result->isSuccess())
 		{
-			$tmpLastVersion = $moduleBuilder->getRootTmpDirPath() . '/.last_version';
-
-			if (is_dir($moduleBuilder->getRootTmpDirPath()))
+			foreach ($result->getErrors() as $error)
 			{
-				Filesystem::rmDir($moduleBuilder->getRootTmpDirPath());
-			}
-
-			if (!mkdir($tmpLastVersion, BX_DIR_PERMISSIONS, true) && !is_dir($tmpLastVersion))
-			{
-				throw new \RuntimeException(sprintf('Directory "%s" was not created', $tmpLastVersion));
-			}
-
-			Filesystem::prepareEncoding();
-
-			$originalModuleFiles = Filesystem::getFiles($moduleBuilder->getRootDirPath(), [], true);
-
-			foreach ($originalModuleFiles as $file)
-			{
-				if (ExcludedFiles::matches($file))
-				{
-					continue;
-				}
-
-				$fromFile = $moduleBuilder->getRootDirPath() . $file;
-				$toFile = $tmpLastVersion . $file;
-				$fileContents = file_get_contents($fromFile);
-
-				if (!$fileContents)
-				{
-					$errors[] = 'Failed to read file: ' . $fromFile;
-				}
-				else
-				{
-					if (str_ends_with($file, '.php'))
-					{
-						$fileContents = Filesystem::toCP1251($fileContents);
-					}
-
-					if (!file_exists($dir = dirname($toFile)) && !mkdir($dir, BX_DIR_PERMISSIONS, true) && !is_dir($dir))
-					{
-						throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
-					}
-
-					if (!file_put_contents($toFile, $fileContents))
-					{
-						$errors[] = 'Failed to save file: ' . $toFile;
-					}
-					else
-					{
-						$fileList[] = $file;
-					}
-				}
-			}
-
-			if (empty($errors))
-			{
-				Filesystem::packFolder($tmpLastVersion, $moduleBuilder->getRootTmpDirPath());
-			}
-		}
-
-		if (!empty($errors))
-		{
-			foreach ($errors as $error)
-			{
-				$this->errorCollection->setError(new Error($error));
+				$this->errorCollection->setError($error);
 			}
 
 			return null;
@@ -237,7 +185,7 @@ class BuilderArchiveComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 			'downloadLink' => Links::downloadFile($archivePath),
 			'archivePath' => $archivePath,
 			'marketplaceLink' => Links::marketplaceEdit($moduleId),
-			'fileList' => $fileList,
+			'fileList' => $result->getFileList(),
 		];
 	}
 

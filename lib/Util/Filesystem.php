@@ -1,6 +1,6 @@
 <?php
 
-namespace Bitrix\MpBuilder;
+namespace Bitrix\MpBuilder\Util;
 
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Text\Encoding;

@@ -56,6 +56,26 @@ export const appTemplate = `
 							/>
 						</div>
 
+						<div v-if="moduleInfo.isDevStrategyActive && devVersions.length > 0" class="mpb-update__field">
+							<label class="mpb-update__label">{{ loc('MPBUILDER_UPDATE_DEV_VERSIONS') }}</label>
+							<div class="mpb-update__dev-versions">
+								<button
+									class="mpb-update__dev-version-tag"
+									:class="{ 'mpb-update__dev-version-tag--active': version === moduleInfo.nextVersion }"
+									:disabled="isLoadingDevVersion || isBuilding"
+									@click="selectNewVersion"
+								>{{ loc('MPBUILDER_UPDATE_DEV_VERSION_NEW') }}</button>
+								<button
+									v-for="ver in devVersions"
+									:key="ver"
+									class="mpb-update__dev-version-tag"
+									:class="{ 'mpb-update__dev-version-tag--active': version === ver }"
+									:disabled="isLoadingDevVersion || isBuilding"
+									@click="selectDevVersion(ver)"
+								>{{ ver }}</button>
+							</div>
+						</div>
+
 						<div class="mpb-update__field">
 							<label class="mpb-update__checkbox">
 								<input type="checkbox" v-model="storeVersion" />
@@ -63,7 +83,7 @@ export const appTemplate = `
 							</label>
 						</div>
 
-						<div v-if="moduleInfo.backupVersion" class="mpb-update__field">
+						<div v-if="moduleInfo.backupVersion && !moduleInfo.isDevStrategyActive" class="mpb-update__field">
 							<div class="mpb-update__warning-badge">
 								{{ loc('MPBUILDER_UPDATE_BACKUP_AVAILABLE') }}
 								<strong>{{ moduleInfo.backupVersion }}</strong>.
@@ -136,7 +156,44 @@ export const appTemplate = `
 						</div>
 
 						<div class="mpb-update__field">
-							<label class="mpb-update__label">{{ loc('MPBUILDER_UPDATE_UPDATER_LABEL') }}</label>
+							<div class="mpb-update__field-header">
+								<label class="mpb-update__label">{{ loc('MPBUILDER_UPDATE_UPDATER_LABEL') }}</label>
+								<div v-if="moduleInfo.isDevStrategyActive" class="mpb-update__dev-tools">
+									<button
+										class="mpb-update__button mpb-update__button--tool"
+										:disabled="!version || isBuilding"
+										@click="generateStructure"
+										:title="loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE_HINT')"
+									>
+										<template v-if="isGeneratingStructure">
+											<span class="mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary"></span>
+										</template>
+										{{ loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE') }}
+									</button>
+									<button
+										class="mpb-update__button mpb-update__button--tool"
+										:disabled="!version || isBuilding"
+										@click="analyzeStructure"
+										:title="loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE_HINT')"
+									>
+										<template v-if="isAnalyzingStructure">
+											<span class="mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary"></span>
+										</template>
+										<template v-else>
+											<span class="ui-icon-set --magic-wand"></span>
+										</template>
+										{{ loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE') }}
+									</button>
+								</div>
+							</div>
+							<div v-if="structureInfo" class="mpb-update__structure-hint" :class="{ 'mpb-update__structure-hint--error': !structureInfo.success }">
+								<template v-if="structureInfo.success">
+									{{ loc('MPBUILDER_UPDATE_STRUCTURE_SAVED') }} ({{ structureInfo.count }})
+								</template>
+								<template v-else>
+									{{ structureInfo.error }}
+								</template>
+							</div>
 							<textarea
 								id="mpb-updater-editor"
 								class="mpb-update__textarea mpb-update__textarea--mono"
@@ -284,21 +341,27 @@ export const appTemplate = `
 					</h4>
 				</div>
 				<div class="mpb-update__card-body">
-					<div class="mpb-update__result-links">
-						<a :href="buildResult.filemanLink" target="_blank" class="mpb-update__result-link">
-							<span class="ui-icon-set --open-in-40"></span>
-							{{ loc('MPBUILDER_UPDATE_OPEN_FOLDER') }}
-						</a>
-						<a :href="buildResult.downloadLink" class="mpb-update__result-link">
-							<span class="ui-icon-set --download"></span>
-							{{ loc('MPBUILDER_UPDATE_DOWNLOAD_ARCHIVE') }}
-						</a>
-						<a :href="buildResult.marketplaceLink" target="_blank" class="mpb-update__result-link">
-							<span class="ui-icon-set --cloud-transfer-data"></span>
-							{{ loc('MPBUILDER_UPDATE_UPLOAD_MARKETPLACE') }}
-						</a>
+
+					<div v-if="buildResult.strategy === 'dev'" class="mpb-update__dev-path">
+						<span class="mpb-update__dev-path-label">{{ loc('MPBUILDER_UPDATE_DEV_PATH') }}</span>
+						<code class="mpb-update__dev-path-value">{{ buildResult.devPath }}</code>
 					</div>
 
+					<div class="mpb-update__result-links">
+							<a :href="buildResult.filemanLink" target="_blank" class="mpb-update__result-link">
+								<span class="ui-icon-set --open-in-40"></span>
+								{{ loc('MPBUILDER_UPDATE_OPEN_FOLDER') }}
+							</a>
+							<a :href="buildResult.downloadLink" class="mpb-update__result-link">
+								<span class="ui-icon-set --download"></span>
+								{{ loc('MPBUILDER_UPDATE_DOWNLOAD_ARCHIVE') }}
+							</a>
+							<a :href="buildResult.marketplaceLink" target="_blank" class="mpb-update__result-link">
+								<span class="ui-icon-set --cloud-transfer-data"></span>
+								{{ loc('MPBUILDER_UPDATE_UPLOAD_MARKETPLACE') }}
+							</a>
+						</div>
+					
 					<div class="mpb-update__file-list">
 						<div class="mpb-update__file-list-header" @click="fileListExpanded = !fileListExpanded">
 							<span class="ui-icon-set --chevron-down mpb-update__file-list-chevron" :class="{ 'mpb-update__file-list-chevron--expanded': fileListExpanded }"></span>

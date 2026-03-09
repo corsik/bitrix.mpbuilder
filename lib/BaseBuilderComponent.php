@@ -5,7 +5,6 @@ namespace Bitrix\MpBuilder;
 use Bitrix\Main\Engine\Contract\Controllerable;
 use Bitrix\Main\Error;
 use Bitrix\Main\ErrorCollection;
-use Bitrix\Main\Loader;
 
 abstract class BaseBuilderComponent extends \CBitrixComponent implements Controllerable
 {
@@ -15,7 +14,6 @@ abstract class BaseBuilderComponent extends \CBitrixComponent implements Control
 	{
 		parent::__construct($component);
 		$this->errorCollection = new ErrorCollection();
-		Loader::includeModule('bitrix.mpbuilder');
 	}
 
 	public function executeComponent(): void

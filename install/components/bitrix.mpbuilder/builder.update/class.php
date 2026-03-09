@@ -8,13 +8,21 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true)
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Engine\ActionFilter;
 use Bitrix\Main\Error;
-use Bitrix\MpBuilder\ExcludedFiles;
-use Bitrix\MpBuilder\Filesystem;
-use Bitrix\MpBuilder\Links;
+use Bitrix\Main\Loader;
+use Bitrix\MpBuilder\BaseBuilderComponent;
+use Bitrix\MpBuilder\Dto\BuildContext;
+use Bitrix\MpBuilder\Factory\BuildStrategyFactory;
 use Bitrix\MpBuilder\Module;
+use Bitrix\MpBuilder\Service\ComponentSyncer;
+use Bitrix\MpBuilder\Service\FileCollector;
 use Bitrix\MpBuilder\Updates;
+use Bitrix\MpBuilder\Util\ExcludedFiles;
+use Bitrix\MpBuilder\Util\Filesystem;
+use Bitrix\MpBuilder\Util\Links;
 
-class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
+Loader::includeModule('bitrix.mpbuilder');
+
+class BuilderUpdateComponent extends BaseBuilderComponent
 {
 	public function configureActions(): array
 	{
@@ -50,6 +58,22 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 				'prefilters' => [
 					new ActionFilter\Csrf(),
 					new ActionFilter\HttpMethod([ActionFilter\HttpMethod::METHOD_POST]),
+				],
+			],
+			'generateStructure' => [
+				'prefilters' => [
+					new ActionFilter\Csrf(),
+					new ActionFilter\HttpMethod([ActionFilter\HttpMethod::METHOD_POST]),
+				],
+			],
+			'analyzeStructure' => [
+				'prefilters' => [
+					new ActionFilter\Csrf(),
+				],
+			],
+			'loadDevVersion' => [
+				'prefilters' => [
+					new ActionFilter\Csrf(),
 				],
 			],
 		];
@@ -90,29 +114,7 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 		$namespace = Option::get($moduleId, 'NAMESPACE', '');
 
 		$hasComponents = file_exists($moduleBuilder->getRootDirComponentPath());
-		$hasCustomNamespace = false;
-
-		if ($hasComponents)
-		{
-			$componentDir = opendir($moduleBuilder->getRootDirComponentPath());
-			if ($componentDir)
-			{
-				while (false !== $item = readdir($componentDir))
-				{
-					if (Filesystem::isDot($item) || !is_dir($moduleBuilder->getRootDirComponentPath() . '/' . $item))
-					{
-						continue;
-					}
-
-					if (file_exists($moduleBuilder->getRootDirComponentPath() . '/' . $item . '/component.php'))
-					{
-						$hasCustomNamespace = true;
-						break;
-					}
-				}
-				closedir($componentDir);
-			}
-		}
+		$hasCustomNamespace = $moduleBuilder->hasCustomNamespace();
 
 		$backupVersion = null;
 		$backupVersionPath = $moduleBuilder->getBackupVersionPath();
@@ -132,7 +134,7 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 		$description = '';
 		if ($updatesManager->hasDescription())
 		{
-			$description = $updatesManager->getDescription();
+			$description = Filesystem::toUTF8($updatesManager->getDescription());
 		}
 		elseif (file_exists($f = $moduleBuilder->getRootDirVersionPath($nextVersion) . '/description.ru'))
 		{
@@ -168,13 +170,17 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 			'backupVersion' => $backupVersion,
 			'description' => $description,
 			'updater' => $updater,
+			'isDevStrategyActive' => $updatesManager->isDevStrategyActive(),
+			'devVersions' => $updatesManager->isDevStrategyActive()
+				? Updates::getAvailableVersions($moduleId)
+				: [],
 		];
 	}
 
 	public function prepareUpdateAction(
 		string $moduleId,
 		string $version,
-		bool $components = false,
+		string $components = '',
 		string $namespace = ''
 	): ?array
 	{
@@ -183,6 +189,7 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 			return null;
 		}
 
+		$components = filter_var($components, FILTER_VALIDATE_BOOLEAN);
 		$moduleId = Module::sanitizeId($moduleId);
 
 		if (!$moduleId || !Module::exists($moduleId))
@@ -255,8 +262,8 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 		string $version,
 		string $description,
 		string $updater = '',
-		bool $storeVersion = false,
-		bool $components = false,
+		string $storeVersion = '',
+		string $components = '',
 		string $namespace = ''
 	): ?array
 	{
@@ -265,6 +272,8 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 			return null;
 		}
 
+		$storeVersion = filter_var($storeVersion, FILTER_VALIDATE_BOOLEAN);
+		$components = filter_var($components, FILTER_VALIDATE_BOOLEAN);
 		$moduleId = Module::sanitizeId($moduleId);
 
 		if (!$moduleId || !Module::exists($moduleId))
@@ -288,12 +297,8 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 			return null;
 		}
 
-		$errors = [];
-		$fileList = [];
-
 		$moduleBuilder = new Module($moduleId);
 		$arModuleVersion = $moduleBuilder->loadVersion();
-		$bitrixComponentRootPath = $_SERVER['DOCUMENT_ROOT'] . BX_ROOT . '/components';
 
 		$configVersion = $version ?: VersionUp($arModuleVersion['VERSION'] ?? '');
 		$updatesManager = new Updates($moduleId, $configVersion);
@@ -314,156 +319,61 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 
 			if (!file_put_contents($moduleBuilder->getRootFileVersionPath(), $versionContent))
 			{
-				$errors[] = 'Failed to write version file: ' . $moduleBuilder->getRootFileVersionPath();
+				$this->errorCollection->setError(new Error('Failed to write version file: ' . $moduleBuilder->getRootFileVersionPath()));
+
+				return null;
 			}
 		}
 
-		if (empty($errors))
+		Filesystem::prepareEncoding();
+
+		if ($components && file_exists($moduleBuilder->getRootDirComponentPath()))
 		{
-			if (is_dir($moduleBuilder->getRootTmpDirPath()))
-			{
-				Filesystem::rmDir($moduleBuilder->getRootTmpDirPath());
-			}
+			$syncErrors = ComponentSyncer::sync($moduleBuilder, $bCustomNameSpace, $namespace);
 
-			$versionDir = $moduleBuilder->getRootDirVersionPath($version);
-			if (!mkdir($versionDir, BX_DIR_PERMISSIONS, true) && !is_dir($versionDir))
-			{
-				throw new \RuntimeException(sprintf('Directory "%s" was not created', $versionDir));
-			}
-
-			Filesystem::prepareEncoding();
-
-			if ($components && file_exists($moduleBuilder->getRootDirComponentPath()))
-			{
-				$this->copyComponents($moduleBuilder, $bitrixComponentRootPath, $bCustomNameSpace, $namespace, $errors);
-			}
-
-			$originalModuleFiles = Filesystem::getFiles($moduleBuilder->getRootDirPath(), [], true);
-			$timeFrom = strtotime($arModuleVersion['VERSION_DATE'] ?? '');
-			$tmpDirStrLen = strlen($moduleBuilder->getRootTmpDirPath());
-
-			foreach ($originalModuleFiles as $file)
-			{
-				$fromFile = $moduleBuilder->getRootDirPath() . $file;
-				$toFile = $moduleBuilder->getRootDirVersionPath($version) . $file;
-
-				if (ExcludedFiles::matches($file))
-				{
-					continue;
-				}
-
-				if ($file === '/install/version.php')
-				{
-					if ($storeVersion && !file_put_contents($fromFile, $versionContent))
-					{
-						$errors[] = 'Failed to update version: ' . $fromFile;
-					}
-
-					if (!file_exists($dir = dirname($toFile)) && !mkdir($dir, BX_DIR_PERMISSIONS, true) && !is_dir($dir))
-					{
-						throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
-					}
-
-					if (!file_put_contents($toFile, $versionContent))
-					{
-						$errors[] = 'Failed to write version: ' . $toFile;
-					}
-					else
-					{
-						$fileList[] = substr($toFile, $tmpDirStrLen);
-					}
-
-					continue;
-				}
-
-				if (filemtime($fromFile) < $timeFrom)
-				{
-					continue;
-				}
-
-				$fileContents = file_get_contents($fromFile);
-
-				if (!$fileContents)
-				{
-					$errors[] = 'Failed to read file: ' . $fromFile;
-				}
-				else
-				{
-					if (str_ends_with($file, '.php'))
-					{
-						$fileContents = Filesystem::toCP1251($fileContents);
-					}
-
-					if (!file_exists($dir = dirname($toFile)) && !mkdir($dir, BX_DIR_PERMISSIONS, true) && !is_dir($dir))
-					{
-						throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
-					}
-
-					if (!file_put_contents($toFile, $fileContents))
-					{
-						$errors[] = 'Failed to save file: ' . $toFile;
-					}
-					else
-					{
-						$fileList[] = substr($toFile, $tmpDirStrLen);
-					}
-				}
-			}
-
-			if (empty($errors))
-			{
-				$descriptionFilePath = $moduleBuilder->getRootDirVersionPath($version) . '/description.ru';
-				$descriptionContent = Filesystem::toCP1251($description);
-
-				if (!file_put_contents($descriptionFilePath, $descriptionContent))
-				{
-					$errors[] = 'Failed to write description: ' . $descriptionFilePath;
-				}
-				else
-				{
-					$fileList[] = substr($descriptionFilePath, $tmpDirStrLen);
-				}
-			}
-
-			if (empty($errors) && ($str = trim($updater)))
-			{
-				$updaterFilePath = $moduleBuilder->getRootDirVersionPath($version) . '/updater.php';
-
-				if (!file_put_contents($updaterFilePath, $str))
-				{
-					$errors[] = 'Failed to save updater: ' . $updaterFilePath;
-				}
-				else
-				{
-					$fileList[] = substr($updaterFilePath, $tmpDirStrLen);
-				}
-			}
-
-			if (empty($errors))
-			{
-				Filesystem::packFolder($moduleBuilder->getRootDirVersionPath($version), $moduleBuilder->getRootTmpDirPath());
-			}
-		}
-
-		if (!empty($errors))
-		{
-			foreach ($errors as $error)
+			foreach ($syncErrors as $error)
 			{
 				$this->errorCollection->setError(new Error($error));
+			}
+
+			if (!empty($syncErrors))
+			{
+				return null;
+			}
+		}
+
+		$strategy = BuildStrategyFactory::createForUpdate($updatesManager);
+		$context = new BuildContext($moduleBuilder, $version, $versionContent, $description, $updater, $arModuleVersion);
+		$result = $strategy->build($context);
+
+		if (!$result->isSuccess())
+		{
+			foreach ($result->getErrors() as $error)
+			{
+				$this->errorCollection->setError($error);
 			}
 
 			return null;
 		}
 
 		$archivePath = $moduleBuilder->getTmpDirPath() . '/' . $version . '.tar.gz';
+		$isDevStrategy = $updatesManager->isDevStrategyActive();
 
-		return [
+		$returnResult = [
+			'strategy' => $isDevStrategy ? 'dev' : 'archive',
 			'filemanLink' => Links::filemanFolder($moduleBuilder->getTmpDirPath()),
 			'downloadLink' => Links::downloadFile($archivePath),
 			'archivePath' => $archivePath,
 			'marketplaceLink' => Links::marketplaceDeploy($moduleId),
-			'fileList' => $fileList,
+			'fileList' => $result->getFileList(),
 		];
+
+		if ($isDevStrategy)
+		{
+			$returnResult['devPath'] = "/dev/updates/$moduleId/$version";
+		}
+
+		return $returnResult;
 	}
 
 	public function deleteTempAction(string $moduleId): ?array
@@ -513,98 +423,194 @@ class BuilderUpdateComponent extends \Bitrix\MpBuilder\BaseBuilderComponent
 		];
 	}
 
-	private function copyComponents(
-		Module $moduleBuilder,
-		string $bitrixComponentRootPath,
-		bool $bCustomNameSpace,
-		string $namespace,
-		array &$errors
-	): void
+	public function generateStructureAction(string $moduleId, string $version): ?array
 	{
-		$ar = [];
-		$componentDir = opendir($moduleBuilder->getRootDirComponentPath());
-
-		if (!$componentDir)
+		if (!$this->checkAdmin())
 		{
-			return;
+			return null;
 		}
 
-		if ($bCustomNameSpace)
+		$moduleId = Module::sanitizeId($moduleId);
+
+		if (!$moduleId || !Module::exists($moduleId))
 		{
-			while (false !== $item = readdir($componentDir))
+			$this->errorCollection->setError(new Error('Module not found'));
+
+			return null;
+		}
+
+		if (!$version)
+		{
+			$this->errorCollection->setError(new Error('Version is required'));
+
+			return null;
+		}
+
+		$moduleBuilder = new Module($moduleId);
+		$updatesManager = new Updates($moduleId, $version);
+
+		if (!$updatesManager->isDevStrategyActive())
+		{
+			$this->errorCollection->setError(new Error('Dev strategy is not active'));
+
+			return null;
+		}
+
+		$files = FileCollector::getAll($moduleBuilder);
+
+		if (!$updatesManager->saveStructure($files))
+		{
+			$this->errorCollection->setError(new Error('Failed to save module-structure.json'));
+
+			return null;
+		}
+
+		return [
+			'count' => count($files),
+			'path' => "/dev/updates/$moduleId/$version/module-structure.json",
+		];
+	}
+
+	public function analyzeStructureAction(string $moduleId, string $version): ?array
+	{
+		if (!$this->checkAdmin())
+		{
+			return null;
+		}
+
+		$moduleId = Module::sanitizeId($moduleId);
+
+		if (!$moduleId || !Module::exists($moduleId))
+		{
+			$this->errorCollection->setError(new Error('Module not found'));
+
+			return null;
+		}
+
+		if (!$version)
+		{
+			$this->errorCollection->setError(new Error('Version is required'));
+
+			return null;
+		}
+
+		$moduleBuilder = new Module($moduleId);
+		$updatesManager = new Updates($moduleId, $version);
+		$updatesManager->loadExclusions();
+
+		if (!$updatesManager->isDevStrategyActive())
+		{
+			$this->errorCollection->setError(new Error('Dev strategy is not active'));
+
+			return null;
+		}
+
+		$previousStructure = $updatesManager->loadPreviousStructure();
+
+		if ($previousStructure === null)
+		{
+			$this->errorCollection->setError(new Error('No previous module-structure.json found. Generate structure for the current version first.'));
+
+			return null;
+		}
+
+		$prevVersion = $previousStructure['version'] ?? '';
+		$prevFiles = $previousStructure['files'] ?? [];
+
+		$allFiles = FileCollector::getAll($moduleBuilder);
+
+		$currentLookup = array_flip($allFiles);
+		$deletedFiles = array_values(array_filter($prevFiles, fn($f) => !isset($currentLookup[$f])));
+
+		$arModuleVersion = $moduleBuilder->loadVersion();
+		$timeFrom = strtotime($arModuleVersion['VERSION_DATE'] ?? '');
+
+		$changedInstallDirs = [];
+
+		foreach ($allFiles as $file)
+		{
+			if (!str_starts_with($file, '/install/') || $file === '/install/version.php')
 			{
-				if (Filesystem::isDot($item))
-				{
-					continue;
-				}
+				continue;
+			}
 
-				if (is_dir($f = $bitrixComponentRootPath . '/' . $namespace . '/' . $item))
-				{
-					$arTmp = Filesystem::getFiles($f, [], true);
+			if (filemtime($moduleBuilder->getRootDirPath() . $file) < $timeFrom)
+			{
+				continue;
+			}
 
-					foreach ($arTmp as $file)
-					{
-						$ar[] = '/' . $namespace . '/' . $item . $file;
-					}
-				}
+			$parts = explode('/', ltrim($file, '/'));
+
+			if (count($parts) >= 2)
+			{
+				$changedInstallDirs[$parts[1]] = true;
 			}
 		}
-		else
+
+		return [
+			'prevVersion' => $prevVersion,
+			'deletedFiles' => $deletedFiles,
+			'changedInstallDirs' => array_keys($changedInstallDirs),
+			'moduleId' => $moduleId,
+		];
+	}
+
+	public function loadDevVersionAction(string $moduleId, string $version): ?array
+	{
+		if (!$this->checkAdmin())
 		{
-			while (false !== $item = readdir($componentDir))
-			{
-				if (Filesystem::isDot($item) || !is_dir($path0 = $moduleBuilder->getRootDirComponentPath() . '/' . $item))
-				{
-					continue;
-				}
-
-				$dir0 = opendir($path0);
-
-				if (!$dir0)
-				{
-					continue;
-				}
-
-				while (false !== $item0 = readdir($dir0))
-				{
-					if (Filesystem::isDot($item0) || !is_dir($f = $path0 . '/' . $item0))
-					{
-						continue;
-					}
-
-					$arTmp = Filesystem::getFiles($bitrixComponentRootPath . '/' . $item . '/' . $item0, [], true);
-
-					foreach ($arTmp as $file)
-					{
-						$ar[] = '/' . $item . '/' . $item0 . $file;
-					}
-				}
-				closedir($dir0);
-			}
+			return null;
 		}
 
-		closedir($componentDir);
+		$moduleId = Module::sanitizeId($moduleId);
 
-		foreach ($ar as $file)
+		if (!$moduleId || !Module::exists($moduleId))
 		{
-			$from = $bitrixComponentRootPath . $file;
-			$to = $moduleBuilder->getRootDirComponentPath() . ($bCustomNameSpace ? preg_replace('#^/[^/]+#', '', $file) : $file);
+			$this->errorCollection->setError(new Error('Module not found'));
 
-			if (!file_exists($to) || filemtime($from) > filemtime($to))
-			{
-				if (!is_dir($d = dirname($to)) && !mkdir($d, BX_DIR_PERMISSIONS, true) && !is_dir($d))
-				{
-					$errors[] = 'Failed to create directory: ' . $d;
-				}
-				elseif (!copy($from, $to))
-				{
-					$errors[] = 'Failed to copy file: ' . $from;
-				}
-				else
-				{
-					touch($to, filemtime($from));
-				}
-			}
+			return null;
 		}
+
+		if (!$version)
+		{
+			$this->errorCollection->setError(new Error('Version is required'));
+
+			return null;
+		}
+
+		$updatesManager = new Updates($moduleId, $version);
+
+		if (!$updatesManager->isDevStrategyActive())
+		{
+			$this->errorCollection->setError(new Error('Dev strategy is not active'));
+
+			return null;
+		}
+
+		if (!$updatesManager->exists())
+		{
+			$this->errorCollection->setError(new Error('Version folder not found'));
+
+			return null;
+		}
+
+		$description = '';
+		if ($updatesManager->hasDescription())
+		{
+			$description = Filesystem::toUTF8($updatesManager->getDescription());
+		}
+
+		$updater = '';
+		if ($updatesManager->hasUpdater())
+		{
+			$updater = $updatesManager->getUpdater();
+		}
+
+		return [
+			'version' => $version,
+			'description' => $description,
+			'updater' => $updater,
+			'hasStructure' => $updatesManager->hasStructure(),
+		];
 	}
 }
