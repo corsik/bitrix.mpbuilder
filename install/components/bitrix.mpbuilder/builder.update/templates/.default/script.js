@@ -131,12 +131,21 @@
 	  }
 	  return files;
 	}
+	function getCodeOutsideAutoBlock(code) {
+	  var startIdx = code.indexOf(AUTO_START);
+	  var endIdx = code.indexOf(AUTO_END);
+	  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+	    return code.substring(0, startIdx) + code.substring(endIdx + AUTO_END.length);
+	  }
+	  return code;
+	}
 	function applyAutoBlock(currentUpdater, data) {
 	  var moduleId = data.moduleId;
 	  var newDirs = data.changedInstallDirs || [];
 	  var newDeletedFiles = data.deletedFiles || [];
-	  var existingDirs = parseExistingCopyDirs(currentUpdater);
-	  var existingFiles = parseExistingDeleteFiles(currentUpdater);
+	  var codeForParsing = getCodeOutsideAutoBlock(currentUpdater);
+	  var existingDirs = parseExistingCopyDirs(codeForParsing);
+	  var existingFiles = parseExistingDeleteFiles(codeForParsing);
 	  var mergedDirs = new Set([].concat(babelHelpers.toConsumableArray(existingDirs), babelHelpers.toConsumableArray(newDirs)));
 	  var newFilePaths = buildDeleteFilePaths(newDeletedFiles, moduleId);
 	  var mergedFiles = new Set([].concat(babelHelpers.toConsumableArray(existingFiles), babelHelpers.toConsumableArray(newFilePaths)));

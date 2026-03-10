@@ -448,6 +448,7 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 
 		$moduleBuilder = new Module($moduleId);
 		$updatesManager = new Updates($moduleId, $version);
+		$updatesManager->loadExclusions();
 
 		if (!$updatesManager->isDevStrategyActive())
 		{
@@ -515,7 +516,10 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		}
 
 		$prevVersion = $previousStructure['version'] ?? '';
-		$prevFiles = $previousStructure['files'] ?? [];
+		$prevFiles = array_values(array_filter(
+			$previousStructure['files'] ?? [],
+			static fn($f) => !ExcludedFiles::matches($f)
+		));
 
 		$allFiles = FileCollector::getAll($moduleBuilder);
 

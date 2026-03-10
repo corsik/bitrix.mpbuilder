@@ -139,14 +139,28 @@ function buildDeleteFilePaths(deletedFiles, moduleId)
 	return files;
 }
 
+function getCodeOutsideAutoBlock(code)
+{
+	const startIdx = code.indexOf(AUTO_START);
+	const endIdx = code.indexOf(AUTO_END);
+
+	if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx)
+	{
+		return code.substring(0, startIdx) + code.substring(endIdx + AUTO_END.length);
+	}
+
+	return code;
+}
+
 export function applyAutoBlock(currentUpdater, data)
 {
 	const moduleId = data.moduleId;
 	const newDirs = data.changedInstallDirs || [];
 	const newDeletedFiles = data.deletedFiles || [];
 
-	const existingDirs = parseExistingCopyDirs(currentUpdater);
-	const existingFiles = parseExistingDeleteFiles(currentUpdater);
+	const codeForParsing = getCodeOutsideAutoBlock(currentUpdater);
+	const existingDirs = parseExistingCopyDirs(codeForParsing);
+	const existingFiles = parseExistingDeleteFiles(codeForParsing);
 
 	const mergedDirs = new Set([...existingDirs, ...newDirs]);
 	const newFilePaths = buildDeleteFilePaths(newDeletedFiles, moduleId);
