@@ -139,7 +139,7 @@ export const appTemplate = `
 					</div>
 				</div>
 
-				<div class="mpb-update__card" :class="{ 'mpb-update__card--disabled': isBuilding }">
+				<div :key="editorKey" class="mpb-update__card" :class="{ 'mpb-update__card--disabled': isBuilding }">
 					<div class="mpb-update__card-header">
 						<h4 class="mpb-update__card-title">{{ loc('MPBUILDER_UPDATE_CONTENT') }}</h4>
 					</div>
