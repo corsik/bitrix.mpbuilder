@@ -541,7 +541,7 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 
 			$parts = explode('/', ltrim($file, '/'));
 
-			if (count($parts) >= 2)
+			if (count($parts) >= 3)
 			{
 				$changedInstallDirs[$parts[1]] = true;
 			}

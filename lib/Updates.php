@@ -279,6 +279,7 @@ class Updates
 		return null;
 	}
 
+
 	private function ensureDir(): void
 	{
 		if (!is_dir($this->rootPath) && !mkdir($this->rootPath, BX_DIR_PERMISSIONS, true) && !is_dir($this->rootPath))
