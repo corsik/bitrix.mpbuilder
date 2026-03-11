@@ -15,7 +15,7 @@ use Bitrix\MpBuilder\Factory\BuildStrategyFactory;
 use Bitrix\MpBuilder\Module;
 use Bitrix\MpBuilder\Service\ComponentSyncer;
 use Bitrix\MpBuilder\Service\FileCollector;
-use Bitrix\MpBuilder\Updates;
+use Bitrix\MpBuilder\DevVersionStorage;
 use Bitrix\MpBuilder\Util\ExcludedFiles;
 use Bitrix\MpBuilder\Util\Filesystem;
 use Bitrix\MpBuilder\Util\Links;
@@ -129,12 +129,12 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			$arModuleVersion = $moduleBuilder->loadVersion();
 		}
 
-		$updatesManager = new Updates($moduleId, $nextVersion);
+		$storage = new DevVersionStorage($moduleId, $nextVersion);
 
 		$description = '';
-		if ($updatesManager->hasDescription())
+		if ($storage->hasDescription())
 		{
-			$description = Filesystem::toUTF8($updatesManager->getDescription());
+			$description = Filesystem::toUTF8($storage->getDescription());
 		}
 		elseif (file_exists($f = $moduleBuilder->getRootDirVersionPath($nextVersion) . '/description.ru'))
 		{
@@ -142,9 +142,9 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		}
 
 		$updater = '';
-		if ($updatesManager->hasUpdater())
+		if ($storage->hasUpdater())
 		{
-			$updater = $updatesManager->getUpdater();
+			$updater = $storage->getUpdater();
 		}
 		else
 		{
@@ -159,6 +159,8 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			}
 		}
 
+		$isDevActive = DevVersionStorage::isActive($moduleId);
+
 		return [
 			'moduleId' => $moduleId,
 			'version' => $arModuleVersion['VERSION'] ?? '',
@@ -170,9 +172,9 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			'backupVersion' => $backupVersion,
 			'description' => $description,
 			'updater' => $updater,
-			'isDevStrategyActive' => $updatesManager->isDevStrategyActive(),
-			'devVersions' => $updatesManager->isDevStrategyActive()
-				? Updates::getAvailableVersions($moduleId)
+			'isDevStrategyActive' => $isDevActive,
+			'devVersions' => $isDevActive
+				? DevVersionStorage::getAvailableVersions($moduleId)
 				: [],
 		];
 	}
@@ -209,10 +211,13 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		$moduleBuilder = new Module($moduleId);
 		$arModuleVersion = $moduleBuilder->loadVersion();
 
-		$updatesManager = new Updates($moduleId, $version);
-		$updatesManager->loadExclusions();
+		$storage = new DevVersionStorage($moduleId, $version);
+		$storage->loadExclusions();
 
-		$timeFrom = strtotime($arModuleVersion['VERSION_DATE'] ?? '');
+		$arVersionForContext = DevVersionStorage::isActive($moduleId)
+			? ($storage->loadPreviousVersionData() ?? $arModuleVersion)
+			: $arModuleVersion;
+		$timeFrom = strtotime($arVersionForContext['VERSION_DATE'] ?? '');
 		$originalModuleFiles = Filesystem::getFiles($moduleBuilder->getRootDirPath(), [], true);
 
 		$includedFiles = [];
@@ -301,8 +306,8 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		$arModuleVersion = $moduleBuilder->loadVersion();
 
 		$configVersion = $version ?: VersionUp($arModuleVersion['VERSION'] ?? '');
-		$updatesManager = new Updates($moduleId, $configVersion);
-		$updatesManager->loadExclusions();
+		$storage = new DevVersionStorage($moduleId, $configVersion);
+		$storage->loadExclusions();
 
 		$bCustomNameSpace = !empty($namespace);
 		if ($bCustomNameSpace)
@@ -342,8 +347,12 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			}
 		}
 
-		$strategy = BuildStrategyFactory::createForUpdate($updatesManager);
-		$context = new BuildContext($moduleBuilder, $version, $versionContent, $description, $updater, $arModuleVersion);
+		$strategy = BuildStrategyFactory::createForUpdate($storage);
+		$isDevActive = DevVersionStorage::isActive($moduleId);
+		$arVersionForContext = $isDevActive
+			? ($storage->loadPreviousVersionData() ?? $arModuleVersion)
+			: $arModuleVersion;
+		$context = new BuildContext($moduleBuilder, $version, $versionContent, $description, $updater, $arVersionForContext);
 		$result = $strategy->build($context);
 
 		if (!$result->isSuccess())
@@ -357,7 +366,7 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		}
 
 		$archivePath = $moduleBuilder->getTmpDirPath() . '/' . $version . '.tar.gz';
-		$isDevStrategy = $updatesManager->isDevStrategyActive();
+		$isDevStrategy = $isDevActive;
 
 		$returnResult = [
 			'strategy' => $isDevStrategy ? 'dev' : 'archive',
@@ -447,10 +456,10 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		}
 
 		$moduleBuilder = new Module($moduleId);
-		$updatesManager = new Updates($moduleId, $version);
-		$updatesManager->loadExclusions();
+		$storage = new DevVersionStorage($moduleId, $version);
+		$storage->loadExclusions();
 
-		if (!$updatesManager->isDevStrategyActive())
+		if (!DevVersionStorage::isActive($moduleId))
 		{
 			$this->errorCollection->setError(new Error('Dev strategy is not active'));
 
@@ -459,7 +468,7 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 
 		$files = FileCollector::getAll($moduleBuilder);
 
-		if (!$updatesManager->saveStructure($files))
+		if (!$storage->saveStructure($files))
 		{
 			$this->errorCollection->setError(new Error('Failed to save module-structure.json'));
 
@@ -496,17 +505,17 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		}
 
 		$moduleBuilder = new Module($moduleId);
-		$updatesManager = new Updates($moduleId, $version);
-		$updatesManager->loadExclusions();
+		$storage = new DevVersionStorage($moduleId, $version);
+		$storage->loadExclusions();
 
-		if (!$updatesManager->isDevStrategyActive())
+		if (!DevVersionStorage::isActive($moduleId))
 		{
 			$this->errorCollection->setError(new Error('Dev strategy is not active'));
 
 			return null;
 		}
 
-		$previousStructure = $updatesManager->loadPreviousStructure();
+		$previousStructure = $storage->loadPreviousStructure();
 
 		if ($previousStructure === null)
 		{
@@ -518,16 +527,17 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		$prevVersion = $previousStructure['version'] ?? '';
 		$prevFiles = array_values(array_filter(
 			$previousStructure['files'] ?? [],
-			static fn($f) => !ExcludedFiles::matches($f)
+			static fn(string $f) => !ExcludedFiles::matches($f)
 		));
 
 		$allFiles = FileCollector::getAll($moduleBuilder);
 
 		$currentLookup = array_flip($allFiles);
-		$deletedFiles = array_values(array_filter($prevFiles, fn($f) => !isset($currentLookup[$f])));
+		$deletedFiles = array_values(array_filter($prevFiles, fn(string $f) => !isset($currentLookup[$f])));
 
 		$arModuleVersion = $moduleBuilder->loadVersion();
-		$timeFrom = strtotime($arModuleVersion['VERSION_DATE'] ?? '');
+		$arVersionForContext = $storage->loadPreviousVersionData() ?? $arModuleVersion;
+		$timeFrom = strtotime($arVersionForContext['VERSION_DATE'] ?? '');
 
 		$changedInstallDirs = [];
 
@@ -582,16 +592,16 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			return null;
 		}
 
-		$updatesManager = new Updates($moduleId, $version);
+		$storage = new DevVersionStorage($moduleId, $version);
 
-		if (!$updatesManager->isDevStrategyActive())
+		if (!DevVersionStorage::isActive($moduleId))
 		{
 			$this->errorCollection->setError(new Error('Dev strategy is not active'));
 
 			return null;
 		}
 
-		if (!$updatesManager->exists())
+		if (!$storage->exists())
 		{
 			$this->errorCollection->setError(new Error('Version folder not found'));
 
@@ -599,22 +609,22 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		}
 
 		$description = '';
-		if ($updatesManager->hasDescription())
+		if ($storage->hasDescription())
 		{
-			$description = Filesystem::toUTF8($updatesManager->getDescription());
+			$description = Filesystem::toUTF8($storage->getDescription());
 		}
 
 		$updater = '';
-		if ($updatesManager->hasUpdater())
+		if ($storage->hasUpdater())
 		{
-			$updater = $updatesManager->getUpdater();
+			$updater = $storage->getUpdater();
 		}
 
 		return [
 			'version' => $version,
 			'description' => $description,
 			'updater' => $updater,
-			'hasStructure' => $updatesManager->hasStructure(),
+			'hasStructure' => $storage->hasStructure(),
 		];
 	}
 }
