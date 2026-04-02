@@ -83,6 +83,38 @@ export const appTemplate = `
 							</label>
 						</div>
 
+						<div v-if="moduleInfo.isDevStrategyActive && devVersions.length > 0" class="mpb-update__field">
+							<label class="mpb-update__label">{{ loc('MPBUILDER_UPDATE_BASE_VERSION') }}</label>
+							<select
+								class="mpb-update__select"
+								v-model="baseVersion"
+								:disabled="isBuilding"
+							>
+								<option value="">{{ loc('MPBUILDER_UPDATE_BASE_VERSION_AUTO') }}</option>
+								<option
+									v-for="ver in devVersions"
+									:key="ver"
+									:value="ver"
+								>{{ ver }}</option>
+							</select>
+							<div class="mpb-update__hint">{{ loc('MPBUILDER_UPDATE_BASE_VERSION_HINT') }}</div>
+						</div>
+
+						<div class="mpb-update__field">
+							<label class="mpb-update__checkbox">
+								<input type="checkbox" v-model="useCustomDate" />
+								<span class="mpb-update__checkbox-text">{{ loc('MPBUILDER_UPDATE_CUSTOM_DATE') }}</span>
+							</label>
+							<div v-if="useCustomDate" class="mpb-update__field mpb-update__field--nested">
+								<input
+									type="datetime-local"
+									class="mpb-update__input"
+									v-model="customDateFrom"
+								/>
+								<div class="mpb-update__hint">{{ loc('MPBUILDER_UPDATE_CUSTOM_DATE_HINT') }}</div>
+							</div>
+						</div>
+
 						<div v-if="moduleInfo.backupVersion && !moduleInfo.isDevStrategyActive" class="mpb-update__field">
 							<div class="mpb-update__warning-badge">
 								{{ loc('MPBUILDER_UPDATE_BACKUP_AVAILABLE') }}
@@ -145,7 +177,29 @@ export const appTemplate = `
 					</div>
 					<div class="mpb-update__card-body">
 						<div class="mpb-update__field">
-							<label class="mpb-update__label">{{ loc('MPBUILDER_UPDATE_DESCRIPTION_LABEL') }}</label>
+							<div class="mpb-update__field-header">
+								<label class="mpb-update__label">{{ loc('MPBUILDER_UPDATE_DESCRIPTION_LABEL') }}</label>
+								<div v-if="moduleInfo.isDevStrategyActive" class="mpb-update__dev-tools">
+									<button
+										class="mpb-update__button mpb-update__button--tool"
+										:disabled="!version || isBuilding || isSavingDescription"
+										@click="saveDescription"
+									>
+										<template v-if="isSavingDescription">
+											<span class="mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary"></span>
+										</template>
+										{{ loc('MPBUILDER_UPDATE_SAVE_DESCRIPTION') }}
+									</button>
+								</div>
+							</div>
+							<div v-if="descriptionSaveInfo" class="mpb-update__structure-hint" :class="{ 'mpb-update__structure-hint--error': !descriptionSaveInfo.success }">
+								<template v-if="descriptionSaveInfo.success">
+									{{ loc('MPBUILDER_UPDATE_DESCRIPTION_SAVED') }}
+								</template>
+								<template v-else>
+									{{ descriptionSaveInfo.error }}
+								</template>
+							</div>
 							<textarea
 								id="mpb-description-editor"
 								class="mpb-update__textarea"
@@ -246,7 +300,7 @@ export const appTemplate = `
 
 						<div class="mpb-update__preview-stats">
 							<div class="mpb-update__preview-stat">
-								<span class="mpb-update__preview-stat-value mpb-update__preview-stat-value--included">{{ prepareResult.includedCount }}</span>
+								<span class="mpb-update__preview-stat-value mpb-update__preview-stat-value--included">{{ filteredIncludedFiles.length }}</span>
 								<span class="mpb-update__preview-stat-label">{{ loc('MPBUILDER_UPDATE_FILES_INCLUDED') }}</span>
 							</div>
 							<div class="mpb-update__preview-stat">
@@ -272,14 +326,44 @@ export const appTemplate = `
 						<div class="mpb-update__file-list-header" @click="prepareIncludedExpanded = !prepareIncludedExpanded">
 							<span class="ui-icon-set --chevron-down mpb-update__file-list-chevron" :class="{ 'mpb-update__file-list-chevron--expanded': prepareIncludedExpanded }"></span>
 							{{ loc('MPBUILDER_UPDATE_FILES_INCLUDED') }}
-							<span class="mpb-update__file-list-count">{{ prepareResult.includedCount }}</span>
+							<span class="mpb-update__file-list-count">{{ filteredIncludedFiles.length }}</span>
 						</div>
 						<div v-if="prepareIncludedExpanded" class="mpb-update__file-list-body">
 							<div
-								v-for="file in prepareResult.includedFiles"
+								v-for="file in filteredIncludedFiles"
 								:key="file"
-								class="mpb-update__file-list-item"
-							>{{ file }}</div>
+								class="mpb-update__file-list-item mpb-update__file-list-item--removable"
+							>
+								<span>{{ file }}</span>
+								<button
+									class="mpb-update__file-remove-btn"
+									:disabled="isBuilding"
+									@click="removeFile(file)"
+									:title="loc('MPBUILDER_UPDATE_FILE_REMOVE')"
+								>&times;</button>
+							</div>
+						</div>
+					</div>
+
+					<div v-if="removedFiles.length > 0" class="mpb-update__file-list">
+						<div class="mpb-update__file-list-header mpb-update__file-list-header--removed">
+							{{ loc('MPBUILDER_UPDATE_FILES_REMOVED') }}
+							<span class="mpb-update__file-list-count mpb-update__file-list-count--excluded">{{ removedFiles.length }}</span>
+						</div>
+						<div class="mpb-update__file-list-body">
+							<div
+								v-for="file in removedFiles"
+								:key="file"
+								class="mpb-update__file-list-item mpb-update__file-list-item--removed"
+							>
+								<span>{{ file }}</span>
+								<button
+									class="mpb-update__file-remove-btn mpb-update__file-remove-btn--restore"
+									:disabled="isBuilding"
+									@click="restoreFile(file)"
+									:title="loc('MPBUILDER_UPDATE_FILE_RESTORE')"
+								>&#8635;</button>
+							</div>
 						</div>
 					</div>
 

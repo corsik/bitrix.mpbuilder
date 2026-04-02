@@ -5,159 +5,7 @@
 	var APP_CONTAINER_ID = 'mpbuilder-update-app';
 	var COMPONENT_NAME = 'bitrix.mpbuilder:builder.update';
 
-	var appTemplate = "\n<div class=\"mpb-update\">\n\n\t<div class=\"mpb-update__layout\" :class=\"{ 'mpb-update__layout--split': prepareResult || buildResult }\">\n\t\t<div class=\"mpb-update__layout-main\">\n\n\t\t\t<div class=\"mpb-update__note\">\n\t\t\t\t<span class=\"ui-icon-set --info-circle mpb-update__note-icon\"></span>\n\t\t\t\t<div class=\"mpb-update__note-text\">{{ loc('MPBUILDER_UPDATE_NOTE') }}</div>\n\t\t\t</div>\n\n\t\t\t<div class=\"mpb-update__card\">\n\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_SELECT_MODULE') }}</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t<select\n\t\t\t\t\t\t\tclass=\"mpb-update__select\"\n\t\t\t\t\t\t\tv-model=\"selectedModuleId\"\n\t\t\t\t\t\t\t:disabled=\"isBuilding\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<option value=\"\">{{ loc('MPBUILDER_UPDATE_SELECT_MODULE_PLACEHOLDER') }}</option>\n\t\t\t\t\t\t\t<option\n\t\t\t\t\t\t\t\tv-for=\"mod in modules\"\n\t\t\t\t\t\t\t\t:key=\"mod\"\n\t\t\t\t\t\t\t\t:value=\"mod\"\n\t\t\t\t\t\t\t>{{ mod }}</option>\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<template v-if=\"isLoadingModuleInfo\">\n\t\t\t\t<div class=\"mpb-update__card\">\n\t\t\t\t\t<div class=\"mpb-update__card-body mpb-update__loading\">\n\t\t\t\t\t\t<div class=\"mpb-update__spinner\"></div>\n\t\t\t\t\t\t<span>{{ loc('MPBUILDER_UPDATE_LOADING') }}</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</template>\n\n\t\t\t<template v-if=\"moduleInfo && !isLoadingModuleInfo\">\n\n\t\t\t\t<div class=\"mpb-update__card\" :class=\"{ 'mpb-update__card--disabled': isBuilding }\">\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_VERSION_SETTINGS') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_VERSION_LABEL') }}</label>\n\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\ttype=\"text\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__input\"\n\t\t\t\t\t\t\t\tv-model=\"version\"\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"moduleInfo.isDevStrategyActive && devVersions.length > 0\" class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_DEV_VERSIONS') }}</label>\n\t\t\t\t\t\t\t<div class=\"mpb-update__dev-versions\">\n\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__dev-version-tag\"\n\t\t\t\t\t\t\t\t\t:class=\"{ 'mpb-update__dev-version-tag--active': version === moduleInfo.nextVersion }\"\n\t\t\t\t\t\t\t\t\t:disabled=\"isLoadingDevVersion || isBuilding\"\n\t\t\t\t\t\t\t\t\t@click=\"selectNewVersion\"\n\t\t\t\t\t\t\t\t>{{ loc('MPBUILDER_UPDATE_DEV_VERSION_NEW') }}</button>\n\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\tv-for=\"ver in devVersions\"\n\t\t\t\t\t\t\t\t\t:key=\"ver\"\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__dev-version-tag\"\n\t\t\t\t\t\t\t\t\t:class=\"{ 'mpb-update__dev-version-tag--active': version === ver }\"\n\t\t\t\t\t\t\t\t\t:disabled=\"isLoadingDevVersion || isBuilding\"\n\t\t\t\t\t\t\t\t\t@click=\"selectDevVersion(ver)\"\n\t\t\t\t\t\t\t\t>{{ ver }}</button>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__checkbox\">\n\t\t\t\t\t\t\t\t<input type=\"checkbox\" v-model=\"storeVersion\" />\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__checkbox-text\">{{ loc('MPBUILDER_UPDATE_STORE_VERSION') }}</span>\n\t\t\t\t\t\t\t</label>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"moduleInfo.backupVersion && !moduleInfo.isDevStrategyActive\" class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<div class=\"mpb-update__warning-badge\">\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_BACKUP_AVAILABLE') }}\n\t\t\t\t\t\t\t\t<strong>{{ moduleInfo.backupVersion }}</strong>.\n\t\t\t\t\t\t\t\t<a href=\"javascript:void(0)\" @click=\"restoreVersion\" class=\"mpb-update__link\">\n\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_RESTORE') }}\n\t\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div\n\t\t\t\t\tv-if=\"moduleInfo.hasComponents\"\n\t\t\t\t\tclass=\"mpb-update__card\"\n\t\t\t\t\t:class=\"{ 'mpb-update__card--disabled': isBuilding }\"\n\t\t\t\t>\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_COMPONENTS') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__checkbox\">\n\t\t\t\t\t\t\t\t<input type=\"checkbox\" v-model=\"components\" />\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__checkbox-text\">{{ loc('MPBUILDER_UPDATE_COPY_COMPONENTS') }}</span>\n\t\t\t\t\t\t\t</label>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"moduleInfo.hasCustomNamespace && components\" class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_NAMESPACE_LABEL') }}</label>\n\t\t\t\t\t\t\t<div class=\"mpb-update__input-prefix\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__input-prefix-text\">/bitrix/components/</span>\n\t\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\t\ttype=\"text\"\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__input\"\n\t\t\t\t\t\t\t\t\tv-model=\"namespace\"\n\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_NAMESPACE_HINT') }}</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div\n\t\t\t\t\tv-if=\"!moduleInfo.hasComponents\"\n\t\t\t\t\tclass=\"mpb-update__card\"\n\t\t\t\t\t:class=\"{ 'mpb-update__card--disabled': isBuilding }\"\n\t\t\t\t>\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_COMPONENTS') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_NO_COMPONENTS') }}</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div :key=\"editorKey\" class=\"mpb-update__card\" :class=\"{ 'mpb-update__card--disabled': isBuilding }\">\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_CONTENT') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_DESCRIPTION_LABEL') }}</label>\n\t\t\t\t\t\t\t<textarea\n\t\t\t\t\t\t\t\tid=\"mpb-description-editor\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__textarea\"\n\t\t\t\t\t\t\t\tv-model=\"description\"\n\t\t\t\t\t\t\t\trows=\"8\"\n\t\t\t\t\t\t\t></textarea>\n\t\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_DESCRIPTION_HINT') }}</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<div class=\"mpb-update__field-header\">\n\t\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_UPDATER_LABEL') }}</label>\n\t\t\t\t\t\t\t\t<div v-if=\"moduleInfo.isDevStrategyActive\" class=\"mpb-update__dev-tools\">\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--tool\"\n\t\t\t\t\t\t\t\t\t\t:disabled=\"!version || isBuilding\"\n\t\t\t\t\t\t\t\t\t\t@click=\"generateStructure\"\n\t\t\t\t\t\t\t\t\t\t:title=\"loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE_HINT')\"\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t<template v-if=\"isGeneratingStructure\">\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary\"></span>\n\t\t\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE') }}\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--tool\"\n\t\t\t\t\t\t\t\t\t\t:disabled=\"!version || isBuilding\"\n\t\t\t\t\t\t\t\t\t\t@click=\"analyzeStructure\"\n\t\t\t\t\t\t\t\t\t\t:title=\"loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE_HINT')\"\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t<template v-if=\"isAnalyzingStructure\">\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary\"></span>\n\t\t\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --magic-wand\"></span>\n\t\t\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE') }}\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div v-if=\"structureInfo\" class=\"mpb-update__structure-hint\" :class=\"{ 'mpb-update__structure-hint--error': !structureInfo.success }\">\n\t\t\t\t\t\t\t\t<template v-if=\"structureInfo.success\">\n\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_STRUCTURE_SAVED') }} ({{ structureInfo.count }})\n\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t\t{{ structureInfo.error }}\n\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<textarea\n\t\t\t\t\t\t\t\tid=\"mpb-updater-editor\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__textarea mpb-update__textarea--mono\"\n\t\t\t\t\t\t\t\tv-model=\"updater\"\n\t\t\t\t\t\t\t\trows=\"8\"\n\t\t\t\t\t\t\t></textarea>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mpb-update__actions\" v-if=\"!prepareResult && !buildResult\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--primary\"\n\t\t\t\t\t\t:disabled=\"!canPrepare\"\n\t\t\t\t\t\t@click=\"prepareUpdate\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<template v-if=\"isPreparing\">\n\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--sm\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_PREPARING') }}\n\t\t\t\t\t\t</template>\n\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_PREPARE_BUTTON') }}\n\t\t\t\t\t\t</template>\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\n\t\t\t</template>\n\n\t\t</div>\n\n\t\t<div v-if=\"prepareResult || buildResult\" class=\"mpb-update__layout-sidebar\">\n\n\t\t\t<div v-if=\"prepareResult\" class=\"mpb-update__card mpb-update__card--preview\">\n\t\t\t\t<div class=\"mpb-update__card-header mpb-update__card-header--preview\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">\n\t\t\t\t\t\t<span class=\"ui-icon-set --file\"></span>\n\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_PREVIEW_TITLE') }}\n\t\t\t\t\t</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t<div class=\"mpb-update__preview-summary\">\n\t\t\t\t\t\t<div class=\"mpb-update__preview-info\">\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-label\">{{ loc('MPBUILDER_UPDATE_PREVIEW_MODULE') }}</span>\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-value\">{{ selectedModuleId }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"mpb-update__preview-info\">\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-label\">{{ loc('MPBUILDER_UPDATE_PREVIEW_VERSION') }}</span>\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-value\">{{ version }}</span>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"mpb-update__preview-stats\">\n\t\t\t\t\t\t\t<div class=\"mpb-update__preview-stat\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-value mpb-update__preview-stat-value--included\">{{ prepareResult.includedCount }}</span>\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-label\">{{ loc('MPBUILDER_UPDATE_FILES_INCLUDED') }}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"mpb-update__preview-stat\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-value mpb-update__preview-stat-value--excluded\">{{ prepareResult.excludedCount }}</span>\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-label\">{{ loc('MPBUILDER_UPDATE_FILES_EXCLUDED') }}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div v-if=\"prepareResult.skippedByDate > 0\" class=\"mpb-update__preview-stat\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-value\">{{ prepareResult.skippedByDate }}</span>\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-label\">{{ loc('MPBUILDER_UPDATE_FILES_SKIPPED') }}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"prepareResult.versionDate\" class=\"mpb-update__preview-date\">\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILES_SINCE') }}: {{ prepareResult.versionDate }}\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"prepareResult.hasComponentSync\" class=\"mpb-update__preview-note\">\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_COMPONENT_SYNC_NOTE') }}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__file-list\">\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-header\" @click=\"prepareIncludedExpanded = !prepareIncludedExpanded\">\n\t\t\t\t\t\t\t<span class=\"ui-icon-set --chevron-down mpb-update__file-list-chevron\" :class=\"{ 'mpb-update__file-list-chevron--expanded': prepareIncludedExpanded }\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILES_INCLUDED') }}\n\t\t\t\t\t\t\t<span class=\"mpb-update__file-list-count\">{{ prepareResult.includedCount }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div v-if=\"prepareIncludedExpanded\" class=\"mpb-update__file-list-body\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tv-for=\"file in prepareResult.includedFiles\"\n\t\t\t\t\t\t\t\t:key=\"file\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__file-list-item\"\n\t\t\t\t\t\t\t>{{ file }}</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div v-if=\"prepareResult.excludedCount > 0\" class=\"mpb-update__file-list\">\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-header\" @click=\"prepareExcludedExpanded = !prepareExcludedExpanded\">\n\t\t\t\t\t\t\t<span class=\"ui-icon-set --chevron-down mpb-update__file-list-chevron\" :class=\"{ 'mpb-update__file-list-chevron--expanded': prepareExcludedExpanded }\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILES_EXCLUDED') }}\n\t\t\t\t\t\t\t<span class=\"mpb-update__file-list-count mpb-update__file-list-count--excluded\">{{ prepareResult.excludedCount }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div v-if=\"prepareExcludedExpanded\" class=\"mpb-update__file-list-body\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tv-for=\"file in prepareResult.excludedFiles\"\n\t\t\t\t\t\t\t\t:key=\"file\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__file-list-item mpb-update__file-list-item--excluded\"\n\t\t\t\t\t\t\t>{{ file }}</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__preview-actions\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--primary\"\n\t\t\t\t\t\t\t:disabled=\"!canBuild\"\n\t\t\t\t\t\t\t@click=\"buildUpdate\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<template v-if=\"isBuilding\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--sm\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_BUILDING') }}\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_BUILD_BUTTON') }}\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--secondary\"\n\t\t\t\t\t\t\t:disabled=\"isBuilding || isPreparing\"\n\t\t\t\t\t\t\t@click=\"prepareUpdate\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<template v-if=\"isPreparing\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--sm mpb-update__spinner--secondary\"></span>\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_REPREPARE_BUTTON') }}\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--ghost\"\n\t\t\t\t\t\t\t:disabled=\"isBuilding\"\n\t\t\t\t\t\t\t@click=\"cancelPrepare\"\n\t\t\t\t\t\t>{{ loc('MPBUILDER_UPDATE_CANCEL_PREPARE') }}</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div v-if=\"buildResult\" class=\"mpb-update__card mpb-update__card--success\">\n\t\t\t\t<div class=\"mpb-update__card-header mpb-update__card-header--success\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">\n\t\t\t\t\t\t<span class=\"ui-icon-set --circle-check mpb-update__icon--success\"></span>\n\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_SUCCESS') }}\n\t\t\t\t\t</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\n\t\t\t\t\t<div v-if=\"buildResult.strategy === 'dev'\" class=\"mpb-update__dev-path\">\n\t\t\t\t\t\t<span class=\"mpb-update__dev-path-label\">{{ loc('MPBUILDER_UPDATE_DEV_PATH') }}</span>\n\t\t\t\t\t\t<code class=\"mpb-update__dev-path-value\">{{ buildResult.devPath }}</code>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__result-links\">\n\t\t\t\t\t\t\t<a :href=\"buildResult.filemanLink\" target=\"_blank\" class=\"mpb-update__result-link\">\n\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --open-in-40\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_OPEN_FOLDER') }}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t<a :href=\"buildResult.downloadLink\" class=\"mpb-update__result-link\">\n\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --download\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_DOWNLOAD_ARCHIVE') }}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t<a :href=\"buildResult.marketplaceLink\" target=\"_blank\" class=\"mpb-update__result-link\">\n\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --cloud-transfer-data\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_UPLOAD_MARKETPLACE') }}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\n\t\t\t\t\t<div class=\"mpb-update__file-list\">\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-header\" @click=\"fileListExpanded = !fileListExpanded\">\n\t\t\t\t\t\t\t<span class=\"ui-icon-set --chevron-down mpb-update__file-list-chevron\" :class=\"{ 'mpb-update__file-list-chevron--expanded': fileListExpanded }\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILE_LIST') }}\n\t\t\t\t\t\t\t<span class=\"mpb-update__file-list-count\">{{ buildResult.fileList.length }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div v-if=\"fileListExpanded\" class=\"mpb-update__file-list-body\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tv-for=\"file in buildResult.fileList\"\n\t\t\t\t\t\t\t\t:key=\"file\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__file-list-item\"\n\t\t\t\t\t\t\t>{{ file }}</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__actions mpb-update__actions--secondary\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--danger\"\n\t\t\t\t\t\t\t@click=\"deleteTemp\"\n\t\t\t\t\t\t>{{ loc('MPBUILDER_UPDATE_DELETE_TEMP') }}</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div v-if=\"buildErrors.length\" class=\"mpb-update__card mpb-update__card--error\">\n\t\t\t\t<div class=\"mpb-update__card-header mpb-update__card-header--error\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_ERROR') }}</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t<ul class=\"mpb-update__error-list\">\n\t\t\t\t\t\t<li v-for=\"(error, index) in buildErrors\" :key=\"index\">{{ error }}</li>\n\t\t\t\t\t</ul>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t</div>\n\t</div>\n\n</div>\n";
-
-	function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
-	function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-	function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
-	var AUTO_START = '// @mpbuilder-auto-start';
-	var AUTO_END = '// @mpbuilder-auto-end';
-	function parseExistingCopyDirs(code) {
-	  var dirs = new Set();
-	  var re = /\$updater->CopyFiles\(\s*["']install\/([^"']+)["']\s*,\s*["'][^"']*["']\s*\)/g;
-	  var match;
-	  while ((match = re.exec(code)) !== null) {
-	    dirs.add(match[1]);
-	  }
-	  return dirs;
-	}
-	function parseExistingDeleteFiles(code) {
-	  var files = new Set();
-	  var re = /\$filesToDelete\s*=\s*\[([\s\S]*?)\]/g;
-	  var match;
-	  while ((match = re.exec(code)) !== null) {
-	    var entries = match[1].matchAll(/['"]([^'"]+)['"]/g);
-	    var _iterator = _createForOfIteratorHelper(entries),
-	      _step;
-	    try {
-	      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-	        var entry = _step.value;
-	        files.add(entry[1]);
-	      }
-	    } catch (err) {
-	      _iterator.e(err);
-	    } finally {
-	      _iterator.f();
-	    }
-	  }
-	  return files;
-	}
-	function removeOldBlocks(code) {
-	  var autoStartIdx = code.indexOf(AUTO_START);
-	  var autoEndIdx = code.indexOf(AUTO_END);
-	  var cleanCode = code;
-	  if (autoStartIdx !== -1 && autoEndIdx !== -1 && autoEndIdx > autoStartIdx) {
-	    cleanCode = code.substring(0, autoStartIdx).trimEnd() + '\n' + code.substring(autoEndIdx + AUTO_END.length);
-	  }
-	  cleanCode = cleanCode.replace(/\n*if\s*\(\s*IsModuleInstalled\([^)]+\)\s*\)\s*\{[^}]*\$updater\x2D>CopyFiles[^}]*\}\n*/g, '\n');
-	  cleanCode = cleanCode.replace(/\n*if\s*\(\s*\$updater->canUpdateKernel\(\)\s*\)\s*\{[\s\S]*?\$filesToDelete[\s\S]*?^\}\n*/gm, '\n');
-	  return cleanCode;
-	}
-	function generateAutoBlock(moduleId, copyDirs, deleteFiles, prevVersion) {
-	  var lines = [];
-	  lines.push(AUTO_START);
-	  if (copyDirs.size > 0) {
-	    lines.push('');
-	    lines.push("if (IsModuleInstalled('".concat(moduleId, "'))"));
-	    lines.push('{');
-	    var _iterator2 = _createForOfIteratorHelper(copyDirs),
-	      _step2;
-	    try {
-	      for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-	        var dir = _step2.value;
-	        lines.push("\t$updater->CopyFiles(\"install/".concat(dir, "\", \"").concat(dir, "\");"));
-	      }
-	    } catch (err) {
-	      _iterator2.e(err);
-	    } finally {
-	      _iterator2.f();
-	    }
-	    lines.push('}');
-	  }
-	  if (deleteFiles.size > 0) {
-	    lines.push('');
-	    lines.push('if ($updater->canUpdateKernel())');
-	    lines.push('{');
-	    if (prevVersion) {
-	      lines.push("\t// Files removed since ".concat(prevVersion));
-	    }
-	    lines.push('\t$filesToDelete = [');
-	    var _iterator3 = _createForOfIteratorHelper(deleteFiles),
-	      _step3;
-	    try {
-	      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-	        var f = _step3.value;
-	        lines.push("\t\t'".concat(f, "',"));
-	      }
-	    } catch (err) {
-	      _iterator3.e(err);
-	    } finally {
-	      _iterator3.f();
-	    }
-	    lines.push('\t];');
-	    lines.push('');
-	    lines.push('\tforeach ($filesToDelete as $fileName)');
-	    lines.push('\t{');
-	    lines.push("\t\tCUpdateSystem::deleteDirFilesEx(");
-	    lines.push("\t\t\t$_SERVER['DOCUMENT_ROOT'] . $updater->kernelPath . '/' . $fileName");
-	    lines.push('\t\t);');
-	    lines.push('\t}');
-	    lines.push('}');
-	  }
-	  lines.push(AUTO_END);
-	  return lines.join('\n');
-	}
-	function buildDeleteFilePaths(deletedFiles, moduleId) {
-	  var publicDirs = new Set(['components', 'js', 'css', 'admin', 'themes', 'images', 'tools']);
-	  var files = new Set();
-	  var _iterator4 = _createForOfIteratorHelper(deletedFiles),
-	    _step4;
-	  try {
-	    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
-	      var file = _step4.value;
-	      files.add("modules/".concat(moduleId).concat(file));
-	      if (file.startsWith('/install/')) {
-	        var relPath = file.substring('/install/'.length);
-	        var topDir = relPath.split('/')[0];
-	        if (publicDirs.has(topDir)) {
-	          files.add(relPath);
-	        }
-	      }
-	    }
-	  } catch (err) {
-	    _iterator4.e(err);
-	  } finally {
-	    _iterator4.f();
-	  }
-	  return files;
-	}
-	function getCodeOutsideAutoBlock(code) {
-	  var startIdx = code.indexOf(AUTO_START);
-	  var endIdx = code.indexOf(AUTO_END);
-	  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-	    return code.substring(0, startIdx) + code.substring(endIdx + AUTO_END.length);
-	  }
-	  return code;
-	}
-	function applyAutoBlock(currentUpdater, data) {
-	  var moduleId = data.moduleId;
-	  var newDirs = data.changedInstallDirs || [];
-	  var newDeletedFiles = data.deletedFiles || [];
-	  var codeForParsing = getCodeOutsideAutoBlock(currentUpdater);
-	  var existingDirs = parseExistingCopyDirs(codeForParsing);
-	  var existingFiles = parseExistingDeleteFiles(codeForParsing);
-	  var mergedDirs = new Set([].concat(babelHelpers.toConsumableArray(existingDirs), babelHelpers.toConsumableArray(newDirs)));
-	  var newFilePaths = buildDeleteFilePaths(newDeletedFiles, moduleId);
-	  var mergedFiles = new Set([].concat(babelHelpers.toConsumableArray(existingFiles), babelHelpers.toConsumableArray(newFilePaths)));
-	  var cleanUpdater = removeOldBlocks(currentUpdater);
-	  var autoBlock = generateAutoBlock(moduleId, mergedDirs, mergedFiles, data.prevVersion || '');
-	  cleanUpdater = cleanUpdater.trimEnd();
-	  var closeIdx = cleanUpdater.lastIndexOf('?>');
-	  if (closeIdx !== -1) {
-	    return cleanUpdater.substring(0, closeIdx).trimEnd() + '\n\n' + autoBlock + '\n\n' + cleanUpdater.substring(closeIdx);
-	  }
-	  return cleanUpdater + '\n\n' + autoBlock;
-	}
+	var appTemplate = "\n<div class=\"mpb-update\">\n\n\t<div class=\"mpb-update__layout\" :class=\"{ 'mpb-update__layout--split': prepareResult || buildResult }\">\n\t\t<div class=\"mpb-update__layout-main\">\n\n\t\t\t<div class=\"mpb-update__note\">\n\t\t\t\t<span class=\"ui-icon-set --info-circle mpb-update__note-icon\"></span>\n\t\t\t\t<div class=\"mpb-update__note-text\">{{ loc('MPBUILDER_UPDATE_NOTE') }}</div>\n\t\t\t</div>\n\n\t\t\t<div class=\"mpb-update__card\">\n\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_SELECT_MODULE') }}</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t<select\n\t\t\t\t\t\t\tclass=\"mpb-update__select\"\n\t\t\t\t\t\t\tv-model=\"selectedModuleId\"\n\t\t\t\t\t\t\t:disabled=\"isBuilding\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<option value=\"\">{{ loc('MPBUILDER_UPDATE_SELECT_MODULE_PLACEHOLDER') }}</option>\n\t\t\t\t\t\t\t<option\n\t\t\t\t\t\t\t\tv-for=\"mod in modules\"\n\t\t\t\t\t\t\t\t:key=\"mod\"\n\t\t\t\t\t\t\t\t:value=\"mod\"\n\t\t\t\t\t\t\t>{{ mod }}</option>\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<template v-if=\"isLoadingModuleInfo\">\n\t\t\t\t<div class=\"mpb-update__card\">\n\t\t\t\t\t<div class=\"mpb-update__card-body mpb-update__loading\">\n\t\t\t\t\t\t<div class=\"mpb-update__spinner\"></div>\n\t\t\t\t\t\t<span>{{ loc('MPBUILDER_UPDATE_LOADING') }}</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</template>\n\n\t\t\t<template v-if=\"moduleInfo && !isLoadingModuleInfo\">\n\n\t\t\t\t<div class=\"mpb-update__card\" :class=\"{ 'mpb-update__card--disabled': isBuilding }\">\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_VERSION_SETTINGS') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_VERSION_LABEL') }}</label>\n\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\ttype=\"text\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__input\"\n\t\t\t\t\t\t\t\tv-model=\"version\"\n\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"moduleInfo.isDevStrategyActive && devVersions.length > 0\" class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_DEV_VERSIONS') }}</label>\n\t\t\t\t\t\t\t<div class=\"mpb-update__dev-versions\">\n\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__dev-version-tag\"\n\t\t\t\t\t\t\t\t\t:class=\"{ 'mpb-update__dev-version-tag--active': version === moduleInfo.nextVersion }\"\n\t\t\t\t\t\t\t\t\t:disabled=\"isLoadingDevVersion || isBuilding\"\n\t\t\t\t\t\t\t\t\t@click=\"selectNewVersion\"\n\t\t\t\t\t\t\t\t>{{ loc('MPBUILDER_UPDATE_DEV_VERSION_NEW') }}</button>\n\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\tv-for=\"ver in devVersions\"\n\t\t\t\t\t\t\t\t\t:key=\"ver\"\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__dev-version-tag\"\n\t\t\t\t\t\t\t\t\t:class=\"{ 'mpb-update__dev-version-tag--active': version === ver }\"\n\t\t\t\t\t\t\t\t\t:disabled=\"isLoadingDevVersion || isBuilding\"\n\t\t\t\t\t\t\t\t\t@click=\"selectDevVersion(ver)\"\n\t\t\t\t\t\t\t\t>{{ ver }}</button>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__checkbox\">\n\t\t\t\t\t\t\t\t<input type=\"checkbox\" v-model=\"storeVersion\" />\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__checkbox-text\">{{ loc('MPBUILDER_UPDATE_STORE_VERSION') }}</span>\n\t\t\t\t\t\t\t</label>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"moduleInfo.isDevStrategyActive && devVersions.length > 0\" class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_BASE_VERSION') }}</label>\n\t\t\t\t\t\t\t<select\n\t\t\t\t\t\t\t\tclass=\"mpb-update__select\"\n\t\t\t\t\t\t\t\tv-model=\"baseVersion\"\n\t\t\t\t\t\t\t\t:disabled=\"isBuilding\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<option value=\"\">{{ loc('MPBUILDER_UPDATE_BASE_VERSION_AUTO') }}</option>\n\t\t\t\t\t\t\t\t<option\n\t\t\t\t\t\t\t\t\tv-for=\"ver in devVersions\"\n\t\t\t\t\t\t\t\t\t:key=\"ver\"\n\t\t\t\t\t\t\t\t\t:value=\"ver\"\n\t\t\t\t\t\t\t\t>{{ ver }}</option>\n\t\t\t\t\t\t\t</select>\n\t\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_BASE_VERSION_HINT') }}</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__checkbox\">\n\t\t\t\t\t\t\t\t<input type=\"checkbox\" v-model=\"useCustomDate\" />\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__checkbox-text\">{{ loc('MPBUILDER_UPDATE_CUSTOM_DATE') }}</span>\n\t\t\t\t\t\t\t</label>\n\t\t\t\t\t\t\t<div v-if=\"useCustomDate\" class=\"mpb-update__field mpb-update__field--nested\">\n\t\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\t\ttype=\"datetime-local\"\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__input\"\n\t\t\t\t\t\t\t\t\tv-model=\"customDateFrom\"\n\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_CUSTOM_DATE_HINT') }}</div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"moduleInfo.backupVersion && !moduleInfo.isDevStrategyActive\" class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<div class=\"mpb-update__warning-badge\">\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_BACKUP_AVAILABLE') }}\n\t\t\t\t\t\t\t\t<strong>{{ moduleInfo.backupVersion }}</strong>.\n\t\t\t\t\t\t\t\t<a href=\"javascript:void(0)\" @click=\"restoreVersion\" class=\"mpb-update__link\">\n\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_RESTORE') }}\n\t\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div\n\t\t\t\t\tv-if=\"moduleInfo.hasComponents\"\n\t\t\t\t\tclass=\"mpb-update__card\"\n\t\t\t\t\t:class=\"{ 'mpb-update__card--disabled': isBuilding }\"\n\t\t\t\t>\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_COMPONENTS') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__checkbox\">\n\t\t\t\t\t\t\t\t<input type=\"checkbox\" v-model=\"components\" />\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__checkbox-text\">{{ loc('MPBUILDER_UPDATE_COPY_COMPONENTS') }}</span>\n\t\t\t\t\t\t\t</label>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"moduleInfo.hasCustomNamespace && components\" class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_NAMESPACE_LABEL') }}</label>\n\t\t\t\t\t\t\t<div class=\"mpb-update__input-prefix\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__input-prefix-text\">/bitrix/components/</span>\n\t\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\t\ttype=\"text\"\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__input\"\n\t\t\t\t\t\t\t\t\tv-model=\"namespace\"\n\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_NAMESPACE_HINT') }}</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div\n\t\t\t\t\tv-if=\"!moduleInfo.hasComponents\"\n\t\t\t\t\tclass=\"mpb-update__card\"\n\t\t\t\t\t:class=\"{ 'mpb-update__card--disabled': isBuilding }\"\n\t\t\t\t>\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_COMPONENTS') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_NO_COMPONENTS') }}</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div :key=\"editorKey\" class=\"mpb-update__card\" :class=\"{ 'mpb-update__card--disabled': isBuilding }\">\n\t\t\t\t\t<div class=\"mpb-update__card-header\">\n\t\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_CONTENT') }}</h4>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<div class=\"mpb-update__field-header\">\n\t\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_DESCRIPTION_LABEL') }}</label>\n\t\t\t\t\t\t\t\t<div v-if=\"moduleInfo.isDevStrategyActive\" class=\"mpb-update__dev-tools\">\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--tool\"\n\t\t\t\t\t\t\t\t\t\t:disabled=\"!version || isBuilding || isSavingDescription\"\n\t\t\t\t\t\t\t\t\t\t@click=\"saveDescription\"\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t<template v-if=\"isSavingDescription\">\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary\"></span>\n\t\t\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_SAVE_DESCRIPTION') }}\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div v-if=\"descriptionSaveInfo\" class=\"mpb-update__structure-hint\" :class=\"{ 'mpb-update__structure-hint--error': !descriptionSaveInfo.success }\">\n\t\t\t\t\t\t\t\t<template v-if=\"descriptionSaveInfo.success\">\n\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_DESCRIPTION_SAVED') }}\n\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t\t{{ descriptionSaveInfo.error }}\n\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<textarea\n\t\t\t\t\t\t\t\tid=\"mpb-description-editor\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__textarea\"\n\t\t\t\t\t\t\t\tv-model=\"description\"\n\t\t\t\t\t\t\t\trows=\"8\"\n\t\t\t\t\t\t\t></textarea>\n\t\t\t\t\t\t\t<div class=\"mpb-update__hint\">{{ loc('MPBUILDER_UPDATE_DESCRIPTION_HINT') }}</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"mpb-update__field\">\n\t\t\t\t\t\t\t<div class=\"mpb-update__field-header\">\n\t\t\t\t\t\t\t\t<label class=\"mpb-update__label\">{{ loc('MPBUILDER_UPDATE_UPDATER_LABEL') }}</label>\n\t\t\t\t\t\t\t\t<div v-if=\"moduleInfo.isDevStrategyActive\" class=\"mpb-update__dev-tools\">\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--tool\"\n\t\t\t\t\t\t\t\t\t\t:disabled=\"!version || isBuilding\"\n\t\t\t\t\t\t\t\t\t\t@click=\"generateStructure\"\n\t\t\t\t\t\t\t\t\t\t:title=\"loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE_HINT')\"\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t<template v-if=\"isGeneratingStructure\">\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary\"></span>\n\t\t\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE') }}\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--tool\"\n\t\t\t\t\t\t\t\t\t\t:disabled=\"!version || isBuilding\"\n\t\t\t\t\t\t\t\t\t\t@click=\"analyzeStructure\"\n\t\t\t\t\t\t\t\t\t\t:title=\"loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE_HINT')\"\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t<template v-if=\"isAnalyzingStructure\">\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary\"></span>\n\t\t\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --magic-wand\"></span>\n\t\t\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE') }}\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div v-if=\"structureInfo\" class=\"mpb-update__structure-hint\" :class=\"{ 'mpb-update__structure-hint--error': !structureInfo.success }\">\n\t\t\t\t\t\t\t\t<template v-if=\"structureInfo.success\">\n\t\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_STRUCTURE_SAVED') }} ({{ structureInfo.count }})\n\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t\t{{ structureInfo.error }}\n\t\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<textarea\n\t\t\t\t\t\t\t\tid=\"mpb-updater-editor\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__textarea mpb-update__textarea--mono\"\n\t\t\t\t\t\t\t\tv-model=\"updater\"\n\t\t\t\t\t\t\t\trows=\"8\"\n\t\t\t\t\t\t\t></textarea>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mpb-update__actions\" v-if=\"!prepareResult && !buildResult\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--primary\"\n\t\t\t\t\t\t:disabled=\"!canPrepare\"\n\t\t\t\t\t\t@click=\"prepareUpdate\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<template v-if=\"isPreparing\">\n\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--sm\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_PREPARING') }}\n\t\t\t\t\t\t</template>\n\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_PREPARE_BUTTON') }}\n\t\t\t\t\t\t</template>\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\n\t\t\t</template>\n\n\t\t</div>\n\n\t\t<div v-if=\"prepareResult || buildResult\" class=\"mpb-update__layout-sidebar\">\n\n\t\t\t<div v-if=\"prepareResult\" class=\"mpb-update__card mpb-update__card--preview\">\n\t\t\t\t<div class=\"mpb-update__card-header mpb-update__card-header--preview\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">\n\t\t\t\t\t\t<span class=\"ui-icon-set --file\"></span>\n\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_PREVIEW_TITLE') }}\n\t\t\t\t\t</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t<div class=\"mpb-update__preview-summary\">\n\t\t\t\t\t\t<div class=\"mpb-update__preview-info\">\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-label\">{{ loc('MPBUILDER_UPDATE_PREVIEW_MODULE') }}</span>\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-value\">{{ selectedModuleId }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"mpb-update__preview-info\">\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-label\">{{ loc('MPBUILDER_UPDATE_PREVIEW_VERSION') }}</span>\n\t\t\t\t\t\t\t<span class=\"mpb-update__preview-info-value\">{{ version }}</span>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div class=\"mpb-update__preview-stats\">\n\t\t\t\t\t\t\t<div class=\"mpb-update__preview-stat\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-value mpb-update__preview-stat-value--included\">{{ filteredIncludedFiles.length }}</span>\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-label\">{{ loc('MPBUILDER_UPDATE_FILES_INCLUDED') }}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"mpb-update__preview-stat\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-value mpb-update__preview-stat-value--excluded\">{{ prepareResult.excludedCount }}</span>\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-label\">{{ loc('MPBUILDER_UPDATE_FILES_EXCLUDED') }}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div v-if=\"prepareResult.skippedByDate > 0\" class=\"mpb-update__preview-stat\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-value\">{{ prepareResult.skippedByDate }}</span>\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__preview-stat-label\">{{ loc('MPBUILDER_UPDATE_FILES_SKIPPED') }}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"prepareResult.versionDate\" class=\"mpb-update__preview-date\">\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILES_SINCE') }}: {{ prepareResult.versionDate }}\n\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t<div v-if=\"prepareResult.hasComponentSync\" class=\"mpb-update__preview-note\">\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_COMPONENT_SYNC_NOTE') }}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__file-list\">\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-header\" @click=\"prepareIncludedExpanded = !prepareIncludedExpanded\">\n\t\t\t\t\t\t\t<span class=\"ui-icon-set --chevron-down mpb-update__file-list-chevron\" :class=\"{ 'mpb-update__file-list-chevron--expanded': prepareIncludedExpanded }\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILES_INCLUDED') }}\n\t\t\t\t\t\t\t<span class=\"mpb-update__file-list-count\">{{ filteredIncludedFiles.length }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div v-if=\"prepareIncludedExpanded\" class=\"mpb-update__file-list-body\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tv-for=\"file in filteredIncludedFiles\"\n\t\t\t\t\t\t\t\t:key=\"file\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__file-list-item mpb-update__file-list-item--removable\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<span>{{ file }}</span>\n\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__file-remove-btn\"\n\t\t\t\t\t\t\t\t\t:disabled=\"isBuilding\"\n\t\t\t\t\t\t\t\t\t@click=\"removeFile(file)\"\n\t\t\t\t\t\t\t\t\t:title=\"loc('MPBUILDER_UPDATE_FILE_REMOVE')\"\n\t\t\t\t\t\t\t\t>&times;</button>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div v-if=\"removedFiles.length > 0\" class=\"mpb-update__file-list\">\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-header mpb-update__file-list-header--removed\">\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILES_REMOVED') }}\n\t\t\t\t\t\t\t<span class=\"mpb-update__file-list-count mpb-update__file-list-count--excluded\">{{ removedFiles.length }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-body\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tv-for=\"file in removedFiles\"\n\t\t\t\t\t\t\t\t:key=\"file\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__file-list-item mpb-update__file-list-item--removed\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<span>{{ file }}</span>\n\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\tclass=\"mpb-update__file-remove-btn mpb-update__file-remove-btn--restore\"\n\t\t\t\t\t\t\t\t\t:disabled=\"isBuilding\"\n\t\t\t\t\t\t\t\t\t@click=\"restoreFile(file)\"\n\t\t\t\t\t\t\t\t\t:title=\"loc('MPBUILDER_UPDATE_FILE_RESTORE')\"\n\t\t\t\t\t\t\t\t>&#8635;</button>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div v-if=\"prepareResult.excludedCount > 0\" class=\"mpb-update__file-list\">\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-header\" @click=\"prepareExcludedExpanded = !prepareExcludedExpanded\">\n\t\t\t\t\t\t\t<span class=\"ui-icon-set --chevron-down mpb-update__file-list-chevron\" :class=\"{ 'mpb-update__file-list-chevron--expanded': prepareExcludedExpanded }\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILES_EXCLUDED') }}\n\t\t\t\t\t\t\t<span class=\"mpb-update__file-list-count mpb-update__file-list-count--excluded\">{{ prepareResult.excludedCount }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div v-if=\"prepareExcludedExpanded\" class=\"mpb-update__file-list-body\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tv-for=\"file in prepareResult.excludedFiles\"\n\t\t\t\t\t\t\t\t:key=\"file\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__file-list-item mpb-update__file-list-item--excluded\"\n\t\t\t\t\t\t\t>{{ file }}</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__preview-actions\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--primary\"\n\t\t\t\t\t\t\t:disabled=\"!canBuild\"\n\t\t\t\t\t\t\t@click=\"buildUpdate\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<template v-if=\"isBuilding\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--sm\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_BUILDING') }}\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_BUILD_BUTTON') }}\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--secondary\"\n\t\t\t\t\t\t\t:disabled=\"isBuilding || isPreparing\"\n\t\t\t\t\t\t\t@click=\"prepareUpdate\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<template v-if=\"isPreparing\">\n\t\t\t\t\t\t\t\t<span class=\"mpb-update__spinner mpb-update__spinner--sm mpb-update__spinner--secondary\"></span>\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t\t<template v-else>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_REPREPARE_BUTTON') }}\n\t\t\t\t\t\t\t</template>\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--ghost\"\n\t\t\t\t\t\t\t:disabled=\"isBuilding\"\n\t\t\t\t\t\t\t@click=\"cancelPrepare\"\n\t\t\t\t\t\t>{{ loc('MPBUILDER_UPDATE_CANCEL_PREPARE') }}</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div v-if=\"buildResult\" class=\"mpb-update__card mpb-update__card--success\">\n\t\t\t\t<div class=\"mpb-update__card-header mpb-update__card-header--success\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">\n\t\t\t\t\t\t<span class=\"ui-icon-set --circle-check mpb-update__icon--success\"></span>\n\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_SUCCESS') }}\n\t\t\t\t\t</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\n\t\t\t\t\t<div v-if=\"buildResult.strategy === 'dev'\" class=\"mpb-update__dev-path\">\n\t\t\t\t\t\t<span class=\"mpb-update__dev-path-label\">{{ loc('MPBUILDER_UPDATE_DEV_PATH') }}</span>\n\t\t\t\t\t\t<code class=\"mpb-update__dev-path-value\">{{ buildResult.devPath }}</code>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__result-links\">\n\t\t\t\t\t\t\t<a :href=\"buildResult.filemanLink\" target=\"_blank\" class=\"mpb-update__result-link\">\n\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --open-in-40\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_OPEN_FOLDER') }}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t<a :href=\"buildResult.downloadLink\" class=\"mpb-update__result-link\">\n\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --download\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_DOWNLOAD_ARCHIVE') }}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t\t<a :href=\"buildResult.marketplaceLink\" target=\"_blank\" class=\"mpb-update__result-link\">\n\t\t\t\t\t\t\t\t<span class=\"ui-icon-set --cloud-transfer-data\"></span>\n\t\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_UPLOAD_MARKETPLACE') }}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\n\t\t\t\t\t<div class=\"mpb-update__file-list\">\n\t\t\t\t\t\t<div class=\"mpb-update__file-list-header\" @click=\"fileListExpanded = !fileListExpanded\">\n\t\t\t\t\t\t\t<span class=\"ui-icon-set --chevron-down mpb-update__file-list-chevron\" :class=\"{ 'mpb-update__file-list-chevron--expanded': fileListExpanded }\"></span>\n\t\t\t\t\t\t\t{{ loc('MPBUILDER_UPDATE_FILE_LIST') }}\n\t\t\t\t\t\t\t<span class=\"mpb-update__file-list-count\">{{ buildResult.fileList.length }}</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div v-if=\"fileListExpanded\" class=\"mpb-update__file-list-body\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tv-for=\"file in buildResult.fileList\"\n\t\t\t\t\t\t\t\t:key=\"file\"\n\t\t\t\t\t\t\t\tclass=\"mpb-update__file-list-item\"\n\t\t\t\t\t\t\t>{{ file }}</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mpb-update__actions mpb-update__actions--secondary\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"mpb-update__button mpb-update__button--danger\"\n\t\t\t\t\t\t\t@click=\"deleteTemp\"\n\t\t\t\t\t\t>{{ loc('MPBUILDER_UPDATE_DELETE_TEMP') }}</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div v-if=\"buildErrors.length\" class=\"mpb-update__card mpb-update__card--error\">\n\t\t\t\t<div class=\"mpb-update__card-header mpb-update__card-header--error\">\n\t\t\t\t\t<h4 class=\"mpb-update__card-title\">{{ loc('MPBUILDER_UPDATE_ERROR') }}</h4>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mpb-update__card-body\">\n\t\t\t\t\t<ul class=\"mpb-update__error-list\">\n\t\t\t\t\t\t<li v-for=\"(error, index) in buildErrors\" :key=\"index\">{{ error }}</li>\n\t\t\t\t\t</ul>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t</div>\n\t</div>\n\n</div>\n";
 
 	function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 	function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { babelHelpers.defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
@@ -181,10 +29,14 @@
 	      namespace: '',
 	      description: '',
 	      updater: '',
+	      useCustomDate: false,
+	      customDateFrom: '',
+	      baseVersion: '',
 	      isPreparing: false,
 	      prepareResult: null,
 	      prepareIncludedExpanded: true,
 	      prepareExcludedExpanded: true,
+	      removedFiles: [],
 	      isBuilding: false,
 	      buildResult: null,
 	      buildErrors: [],
@@ -192,6 +44,8 @@
 	      isGeneratingStructure: false,
 	      isAnalyzingStructure: false,
 	      structureInfo: null,
+	      isSavingDescription: false,
+	      descriptionSaveInfo: null,
 	      devVersions: [],
 	      isLoadingDevVersion: false,
 	      descriptionEditor: null,
@@ -205,17 +59,74 @@
 	    },
 	    canBuild: function canBuild() {
 	      return this.prepareResult && !this.isBuilding;
+	    },
+	    filteredIncludedFiles: function filteredIncludedFiles() {
+	      var _this = this;
+	      if (!this.prepareResult) {
+	        return [];
+	      }
+	      return this.prepareResult.includedFiles.filter(function (f) {
+	        return !_this.removedFiles.includes(f);
+	      });
 	    }
 	  },
 	  mounted: function mounted() {
 	    this.loadModules();
 	  },
 	  watch: {
+	    useCustomDate: function useCustomDate(val) {
+	      if (val && !this.customDateFrom) {
+	        var now = new Date();
+	        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+	        this.customDateFrom = now.toISOString().slice(0, 16);
+	      }
+	    },
+	    baseVersion: function baseVersion(ver) {
+	      var _this2 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+	        var response, d;
+	        return _regeneratorRuntime().wrap(function _callee$(_context) {
+	          while (1) switch (_context.prev = _context.next) {
+	            case 0:
+	              if (ver) {
+	                _context.next = 2;
+	                break;
+	              }
+	              return _context.abrupt("return");
+	            case 2:
+	              _context.prev = 2;
+	              _context.next = 5;
+	              return _this2.runAction('loadDevVersion', {
+	                moduleId: _this2.selectedModuleId,
+	                version: ver
+	              });
+	            case 5:
+	              response = _context.sent;
+	              if (response.data.versionDate) {
+	                _this2.useCustomDate = true;
+	                d = new Date(response.data.versionDate.replace(' ', 'T'));
+	                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+	                _this2.customDateFrom = d.toISOString().slice(0, 16);
+	              }
+	              _context.next = 12;
+	              break;
+	            case 9:
+	              _context.prev = 9;
+	              _context.t0 = _context["catch"](2);
+	              console.error('Failed to load base version date', _context.t0);
+	            case 12:
+	            case "end":
+	              return _context.stop();
+	          }
+	        }, _callee, null, [[2, 9]]);
+	      }))();
+	    },
 	    selectedModuleId: function selectedModuleId(newVal) {
 	      this.prepareResult = null;
 	      this.buildResult = null;
 	      this.buildErrors = [];
 	      this.structureInfo = null;
+	      this.descriptionSaveInfo = null;
 	      if (newVal) {
 	        this.loadModuleInfo(newVal);
 	      } else {
@@ -229,109 +140,109 @@
 	    },
 	    runAction: function runAction(action) {
 	      var _arguments = arguments;
-	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
 	        var data;
-	        return _regeneratorRuntime().wrap(function _callee$(_context) {
-	          while (1) switch (_context.prev = _context.next) {
+	        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+	          while (1) switch (_context2.prev = _context2.next) {
 	            case 0:
 	              data = _arguments.length > 1 && _arguments[1] !== undefined ? _arguments[1] : {};
-	              return _context.abrupt("return", BX.ajax.runComponentAction(COMPONENT_NAME, action, {
+	              return _context2.abrupt("return", BX.ajax.runComponentAction(COMPONENT_NAME, action, {
 	                mode: 'class',
 	                data: data
 	              }));
 	            case 2:
 	            case "end":
-	              return _context.stop();
+	              return _context2.stop();
 	          }
-	        }, _callee);
+	        }, _callee2);
 	      }))();
 	    },
 	    loadModules: function loadModules() {
-	      var _this = this;
-	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-	        var response;
-	        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-	          while (1) switch (_context2.prev = _context2.next) {
-	            case 0:
-	              _context2.prev = 0;
-	              _context2.next = 3;
-	              return _this.runAction('getModules');
-	            case 3:
-	              response = _context2.sent;
-	              _this.modules = response.data.modules || [];
-	              _context2.next = 10;
-	              break;
-	            case 7:
-	              _context2.prev = 7;
-	              _context2.t0 = _context2["catch"](0);
-	              console.error('Failed to load modules', _context2.t0);
-	            case 10:
-	              _context2.prev = 10;
-	              if (_this.selectedModuleId) {
-	                _this.loadModuleInfo(_this.selectedModuleId);
-	              }
-	              return _context2.finish(10);
-	            case 13:
-	            case "end":
-	              return _context2.stop();
-	          }
-	        }, _callee2, null, [[0, 7, 10, 13]]);
-	      }))();
-	    },
-	    loadModuleInfo: function loadModuleInfo(moduleId) {
-	      var _this2 = this;
+	      var _this3 = this;
 	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
-	        var response, info, savedVersion;
+	        var response;
 	        return _regeneratorRuntime().wrap(function _callee3$(_context3) {
 	          while (1) switch (_context3.prev = _context3.next) {
 	            case 0:
 	              _context3.prev = 0;
-	              _this2.isLoadingModuleInfo = true;
-	              _this2.moduleInfo = null;
-	              _this2.prepareResult = null;
-	              _this2.buildResult = null;
-	              _this2.buildErrors = [];
-	              _context3.next = 8;
-	              return _this2.runAction('getModuleInfo', {
-	                moduleId: moduleId
-	              });
-	            case 8:
+	              _context3.next = 3;
+	              return _this3.runAction('getModules');
+	            case 3:
 	              response = _context3.sent;
-	              info = response.data;
-	              _this2.moduleInfo = info;
-	              _this2.devVersions = info.devVersions || [];
-	              _this2.version = info.nextVersion || '';
-	              _this2.namespace = info.namespace || '';
-	              _this2.description = info.description || '<ul>\n  <li></li>\n</ul>';
-	              _this2.updater = info.updater || '';
-	              _this2.storeVersion = false;
-	              _this2.components = false;
-	              savedVersion = _this2.getSavedVersion(moduleId);
-	              if (!(savedVersion && _this2.devVersions.includes(savedVersion))) {
-	                _context3.next = 22;
-	                break;
-	              }
-	              _context3.next = 22;
-	              return _this2.selectDevVersion(savedVersion);
-	            case 22:
-	              _context3.next = 27;
+	              _this3.modules = response.data.modules || [];
+	              _context3.next = 10;
 	              break;
-	            case 24:
-	              _context3.prev = 24;
+	            case 7:
+	              _context3.prev = 7;
 	              _context3.t0 = _context3["catch"](0);
-	              console.error('Failed to load module info', _context3.t0);
-	            case 27:
-	              _context3.prev = 27;
-	              _this2.isLoadingModuleInfo = false;
-	              _this2.$nextTick(function () {
-	                return _this2.initCodeEditors();
-	              });
-	              return _context3.finish(27);
-	            case 31:
+	              console.error('Failed to load modules', _context3.t0);
+	            case 10:
+	              _context3.prev = 10;
+	              if (_this3.selectedModuleId) {
+	                _this3.loadModuleInfo(_this3.selectedModuleId);
+	              }
+	              return _context3.finish(10);
+	            case 13:
 	            case "end":
 	              return _context3.stop();
 	          }
-	        }, _callee3, null, [[0, 24, 27, 31]]);
+	        }, _callee3, null, [[0, 7, 10, 13]]);
+	      }))();
+	    },
+	    loadModuleInfo: function loadModuleInfo(moduleId) {
+	      var _this4 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+	        var response, info, savedVersion;
+	        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+	          while (1) switch (_context4.prev = _context4.next) {
+	            case 0:
+	              _context4.prev = 0;
+	              _this4.isLoadingModuleInfo = true;
+	              _this4.moduleInfo = null;
+	              _this4.prepareResult = null;
+	              _this4.buildResult = null;
+	              _this4.buildErrors = [];
+	              _context4.next = 8;
+	              return _this4.runAction('getModuleInfo', {
+	                moduleId: moduleId
+	              });
+	            case 8:
+	              response = _context4.sent;
+	              info = response.data;
+	              _this4.moduleInfo = info;
+	              _this4.devVersions = info.devVersions || [];
+	              _this4.version = info.nextVersion || '';
+	              _this4.namespace = info.namespace || '';
+	              _this4.description = info.description || '<ul>\n  <li></li>\n</ul>';
+	              _this4.updater = info.updater || '';
+	              _this4.storeVersion = false;
+	              _this4.components = false;
+	              savedVersion = _this4.getSavedVersion(moduleId);
+	              if (!(savedVersion && _this4.devVersions.includes(savedVersion))) {
+	                _context4.next = 22;
+	                break;
+	              }
+	              _context4.next = 22;
+	              return _this4.selectDevVersion(savedVersion);
+	            case 22:
+	              _context4.next = 27;
+	              break;
+	            case 24:
+	              _context4.prev = 24;
+	              _context4.t0 = _context4["catch"](0);
+	              console.error('Failed to load module info', _context4.t0);
+	            case 27:
+	              _context4.prev = 27;
+	              _this4.isLoadingModuleInfo = false;
+	              _this4.$nextTick(function () {
+	                return _this4.initCodeEditors();
+	              });
+	              return _context4.finish(27);
+	            case 31:
+	            case "end":
+	              return _context4.stop();
+	          }
+	        }, _callee4, null, [[0, 24, 27, 31]]);
 	      }))();
 	    },
 	    initCodeEditors: function initCodeEditors() {
@@ -373,238 +284,287 @@
 	      }
 	    },
 	    prepareUpdate: function prepareUpdate() {
-	      var _this3 = this;
-	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+	      var _this5 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
 	        var response;
-	        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-	          while (1) switch (_context4.prev = _context4.next) {
+	        return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+	          while (1) switch (_context5.prev = _context5.next) {
 	            case 0:
-	              if (_this3.canPrepare) {
-	                _context4.next = 2;
+	              if (_this5.canPrepare) {
+	                _context5.next = 2;
 	                break;
 	              }
-	              return _context4.abrupt("return");
+	              return _context5.abrupt("return");
 	            case 2:
-	              _this3.syncEditorValues();
-	              _this3.isPreparing = true;
-	              _this3.buildErrors = [];
-	              _this3.prepareIncludedExpanded = true;
-	              _this3.prepareExcludedExpanded = true;
-	              _context4.prev = 7;
-	              _context4.next = 10;
-	              return _this3.runAction('prepareUpdate', {
-	                moduleId: _this3.selectedModuleId,
-	                version: _this3.version,
-	                components: _this3.components,
-	                namespace: _this3.namespace
+	              _this5.syncEditorValues();
+	              _this5.isPreparing = true;
+	              _this5.buildErrors = [];
+	              _this5.prepareIncludedExpanded = true;
+	              _this5.prepareExcludedExpanded = true;
+	              _context5.prev = 7;
+	              _context5.next = 10;
+	              return _this5.runAction('prepareUpdate', {
+	                moduleId: _this5.selectedModuleId,
+	                version: _this5.version,
+	                components: _this5.components,
+	                namespace: _this5.namespace,
+	                customDateFrom: _this5.useCustomDate ? _this5.customDateFrom : ''
 	              });
 	            case 10:
-	              response = _context4.sent;
-	              _this3.prepareResult = response.data;
-	              _context4.next = 18;
+	              response = _context5.sent;
+	              _this5.prepareResult = response.data;
+	              _this5.removedFiles = [];
+	              _context5.next = 19;
 	              break;
-	            case 14:
-	              _context4.prev = 14;
-	              _context4.t0 = _context4["catch"](7);
-	              console.error('prepareUpdate error:', _context4.t0);
-	              if (_context4.t0.errors && _context4.t0.errors.length) {
-	                _this3.buildErrors = _context4.t0.errors.map(function (e) {
+	            case 15:
+	              _context5.prev = 15;
+	              _context5.t0 = _context5["catch"](7);
+	              console.error('prepareUpdate error:', _context5.t0);
+	              if (_context5.t0.errors && _context5.t0.errors.length) {
+	                _this5.buildErrors = _context5.t0.errors.map(function (e) {
 	                  return e.message;
 	                });
 	              } else {
-	                _this3.buildErrors = ['Unknown error'];
+	                _this5.buildErrors = ['Unknown error'];
 	              }
-	            case 18:
-	              _context4.prev = 18;
-	              _this3.isPreparing = false;
-	              return _context4.finish(18);
-	            case 21:
+	            case 19:
+	              _context5.prev = 19;
+	              _this5.isPreparing = false;
+	              return _context5.finish(19);
+	            case 22:
 	            case "end":
-	              return _context4.stop();
+	              return _context5.stop();
 	          }
-	        }, _callee4, null, [[7, 14, 18, 21]]);
+	        }, _callee5, null, [[7, 15, 19, 22]]);
 	      }))();
+	    },
+	    removeFile: function removeFile(file) {
+	      if (!this.removedFiles.includes(file)) {
+	        this.removedFiles.push(file);
+	      }
+	    },
+	    restoreFile: function restoreFile(file) {
+	      this.removedFiles = this.removedFiles.filter(function (f) {
+	        return f !== file;
+	      });
 	    },
 	    cancelPrepare: function cancelPrepare() {
 	      this.prepareResult = null;
 	      this.buildResult = null;
 	    },
 	    buildUpdate: function buildUpdate() {
-	      var _this4 = this;
-	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
-	        var response;
-	        return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-	          while (1) switch (_context5.prev = _context5.next) {
-	            case 0:
-	              if (_this4.canBuild) {
-	                _context5.next = 2;
-	                break;
-	              }
-	              return _context5.abrupt("return");
-	            case 2:
-	              _this4.syncEditorValues();
-	              _this4.isBuilding = true;
-	              _this4.buildResult = null;
-	              _this4.buildErrors = [];
-	              _this4.fileListExpanded = false;
-	              _context5.prev = 7;
-	              _context5.next = 10;
-	              return _this4.runAction('buildUpdate', {
-	                moduleId: _this4.selectedModuleId,
-	                version: _this4.version,
-	                description: _this4.description,
-	                updater: _this4.updater,
-	                storeVersion: _this4.storeVersion,
-	                components: _this4.components,
-	                namespace: _this4.namespace
-	              });
-	            case 10:
-	              response = _context5.sent;
-	              _this4.buildResult = response.data;
-	              _context5.next = 17;
-	              break;
-	            case 14:
-	              _context5.prev = 14;
-	              _context5.t0 = _context5["catch"](7);
-	              if (_context5.t0.errors && _context5.t0.errors.length) {
-	                _this4.buildErrors = _context5.t0.errors.map(function (e) {
-	                  return e.message;
-	                });
-	              } else {
-	                _this4.buildErrors = ['Unknown error'];
-	              }
-	            case 17:
-	              _context5.prev = 17;
-	              _this4.isBuilding = false;
-	              return _context5.finish(17);
-	            case 20:
-	            case "end":
-	              return _context5.stop();
-	          }
-	        }, _callee5, null, [[7, 14, 17, 20]]);
-	      }))();
-	    },
-	    deleteTemp: function deleteTemp() {
-	      var _this5 = this;
+	      var _this6 = this;
 	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
+	        var response;
 	        return _regeneratorRuntime().wrap(function _callee6$(_context6) {
 	          while (1) switch (_context6.prev = _context6.next) {
 	            case 0:
-	              if (confirm(_this5.loc('MPBUILDER_UPDATE_DELETE_CONFIRM'))) {
+	              if (_this6.canBuild) {
 	                _context6.next = 2;
 	                break;
 	              }
 	              return _context6.abrupt("return");
 	            case 2:
-	              _context6.prev = 2;
-	              _context6.next = 5;
-	              return _this5.runAction('deleteTemp', {
-	                moduleId: _this5.selectedModuleId
+	              _this6.syncEditorValues();
+	              _this6.isBuilding = true;
+	              _this6.buildResult = null;
+	              _this6.buildErrors = [];
+	              _this6.fileListExpanded = false;
+	              _context6.prev = 7;
+	              _context6.next = 10;
+	              return _this6.runAction('buildUpdate', {
+	                moduleId: _this6.selectedModuleId,
+	                version: _this6.version,
+	                description: _this6.description,
+	                updater: _this6.updater,
+	                storeVersion: _this6.storeVersion,
+	                components: _this6.components,
+	                namespace: _this6.namespace,
+	                customDateFrom: _this6.useCustomDate ? _this6.customDateFrom : '',
+	                excludedFiles: JSON.stringify(_this6.removedFiles)
 	              });
-	            case 5:
-	              _this5.buildResult = null;
-	              _context6.next = 11;
+	            case 10:
+	              response = _context6.sent;
+	              _this6.buildResult = response.data;
+	              _context6.next = 17;
 	              break;
-	            case 8:
-	              _context6.prev = 8;
-	              _context6.t0 = _context6["catch"](2);
-	              console.error('Failed to delete temp', _context6.t0);
-	            case 11:
+	            case 14:
+	              _context6.prev = 14;
+	              _context6.t0 = _context6["catch"](7);
+	              if (_context6.t0.errors && _context6.t0.errors.length) {
+	                _this6.buildErrors = _context6.t0.errors.map(function (e) {
+	                  return e.message;
+	                });
+	              } else {
+	                _this6.buildErrors = ['Unknown error'];
+	              }
+	            case 17:
+	              _context6.prev = 17;
+	              _this6.isBuilding = false;
+	              return _context6.finish(17);
+	            case 20:
 	            case "end":
 	              return _context6.stop();
 	          }
-	        }, _callee6, null, [[2, 8]]);
+	        }, _callee6, null, [[7, 14, 17, 20]]);
 	      }))();
 	    },
-	    generateStructure: function generateStructure() {
-	      var _this6 = this;
+	    deleteTemp: function deleteTemp() {
+	      var _this7 = this;
 	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
-	        var response, _err$errors, _err$errors$, msg;
 	        return _regeneratorRuntime().wrap(function _callee7$(_context7) {
 	          while (1) switch (_context7.prev = _context7.next) {
 	            case 0:
-	              _this6.isGeneratingStructure = true;
-	              _this6.structureInfo = null;
+	              if (confirm(_this7.loc('MPBUILDER_UPDATE_DELETE_CONFIRM'))) {
+	                _context7.next = 2;
+	                break;
+	              }
+	              return _context7.abrupt("return");
+	            case 2:
 	              _context7.prev = 2;
 	              _context7.next = 5;
-	              return _this6.runAction('generateStructure', {
-	                moduleId: _this6.selectedModuleId,
-	                version: _this6.version
+	              return _this7.runAction('deleteTemp', {
+	                moduleId: _this7.selectedModuleId
 	              });
 	            case 5:
-	              response = _context7.sent;
-	              _this6.structureInfo = _objectSpread({
+	              _this7.buildResult = null;
+	              _context7.next = 11;
+	              break;
+	            case 8:
+	              _context7.prev = 8;
+	              _context7.t0 = _context7["catch"](2);
+	              console.error('Failed to delete temp', _context7.t0);
+	            case 11:
+	            case "end":
+	              return _context7.stop();
+	          }
+	        }, _callee7, null, [[2, 8]]);
+	      }))();
+	    },
+	    saveDescription: function saveDescription() {
+	      var _this8 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+	        var _err$errors, _err$errors$, msg;
+	        return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+	          while (1) switch (_context8.prev = _context8.next) {
+	            case 0:
+	              _this8.syncEditorValues();
+	              _this8.isSavingDescription = true;
+	              _this8.descriptionSaveInfo = null;
+	              _context8.prev = 3;
+	              _context8.next = 6;
+	              return _this8.runAction('saveDescription', {
+	                moduleId: _this8.selectedModuleId,
+	                version: _this8.version,
+	                description: _this8.description
+	              });
+	            case 6:
+	              _this8.descriptionSaveInfo = {
 	                success: true
-	              }, response.data);
-	              _context7.next = 13;
+	              };
+	              _context8.next = 13;
 	              break;
 	            case 9:
-	              _context7.prev = 9;
-	              _context7.t0 = _context7["catch"](2);
-	              msg = (_context7.t0 === null || _context7.t0 === void 0 ? void 0 : (_err$errors = _context7.t0.errors) === null || _err$errors === void 0 ? void 0 : (_err$errors$ = _err$errors[0]) === null || _err$errors$ === void 0 ? void 0 : _err$errors$.message) || (_context7.t0 === null || _context7.t0 === void 0 ? void 0 : _context7.t0.message) || 'Unknown error';
-	              _this6.structureInfo = {
+	              _context8.prev = 9;
+	              _context8.t0 = _context8["catch"](3);
+	              msg = (_context8.t0 === null || _context8.t0 === void 0 ? void 0 : (_err$errors = _context8.t0.errors) === null || _err$errors === void 0 ? void 0 : (_err$errors$ = _err$errors[0]) === null || _err$errors$ === void 0 ? void 0 : _err$errors$.message) || (_context8.t0 === null || _context8.t0 === void 0 ? void 0 : _context8.t0.message) || 'Unknown error';
+	              _this8.descriptionSaveInfo = {
 	                success: false,
 	                error: msg
 	              };
 	            case 13:
-	              _context7.prev = 13;
-	              _this6.isGeneratingStructure = false;
-	              return _context7.finish(13);
+	              _context8.prev = 13;
+	              _this8.isSavingDescription = false;
+	              return _context8.finish(13);
 	            case 16:
-	            case "end":
-	              return _context7.stop();
-	          }
-	        }, _callee7, null, [[2, 9, 13, 16]]);
-	      }))();
-	    },
-	    analyzeStructure: function analyzeStructure() {
-	      var _this7 = this;
-	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
-	        var data, response, _err$errors2, _err$errors2$, msg;
-	        return _regeneratorRuntime().wrap(function _callee8$(_context8) {
-	          while (1) switch (_context8.prev = _context8.next) {
-	            case 0:
-	              _this7.isAnalyzingStructure = true;
-	              data = null;
-	              _context8.prev = 2;
-	              _context8.next = 5;
-	              return _this7.runAction('analyzeStructure', {
-	                moduleId: _this7.selectedModuleId,
-	                version: _this7.version
-	              });
-	            case 5:
-	              response = _context8.sent;
-	              data = response.data;
-	              _context8.next = 14;
-	              break;
-	            case 9:
-	              _context8.prev = 9;
-	              _context8.t0 = _context8["catch"](2);
-	              msg = (_context8.t0 === null || _context8.t0 === void 0 ? void 0 : (_err$errors2 = _context8.t0.errors) === null || _err$errors2 === void 0 ? void 0 : (_err$errors2$ = _err$errors2[0]) === null || _err$errors2$ === void 0 ? void 0 : _err$errors2$.message) || (_context8.t0 === null || _context8.t0 === void 0 ? void 0 : _context8.t0.message) || 'Unknown error';
-	              alert(_this7.loc('MPBUILDER_UPDATE_ANALYZE_ERROR') + ': ' + msg);
-	              return _context8.abrupt("return");
-	            case 14:
-	              _context8.prev = 14;
-	              _this7.isAnalyzingStructure = false;
-	              return _context8.finish(14);
-	            case 17:
-	              if (data) {
-	                _this7.applyAutoBlock(data);
-	              }
-	            case 18:
 	            case "end":
 	              return _context8.stop();
 	          }
-	        }, _callee8, null, [[2, 9, 14, 17]]);
+	        }, _callee8, null, [[3, 9, 13, 16]]);
 	      }))();
 	    },
-	    applyAutoBlock: function applyAutoBlock$$1(data) {
-	      data.moduleId = data.moduleId || this.selectedModuleId;
-	      this.updater = applyAutoBlock(this.updater || '', data);
-	      this.refreshEditors();
+	    generateStructure: function generateStructure() {
+	      var _this9 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
+	        var response, _err$errors2, _err$errors2$, msg;
+	        return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+	          while (1) switch (_context9.prev = _context9.next) {
+	            case 0:
+	              _this9.isGeneratingStructure = true;
+	              _this9.structureInfo = null;
+	              _context9.prev = 2;
+	              _context9.next = 5;
+	              return _this9.runAction('generateStructure', {
+	                moduleId: _this9.selectedModuleId,
+	                version: _this9.version
+	              });
+	            case 5:
+	              response = _context9.sent;
+	              _this9.structureInfo = _objectSpread({
+	                success: true
+	              }, response.data);
+	              _context9.next = 13;
+	              break;
+	            case 9:
+	              _context9.prev = 9;
+	              _context9.t0 = _context9["catch"](2);
+	              msg = (_context9.t0 === null || _context9.t0 === void 0 ? void 0 : (_err$errors2 = _context9.t0.errors) === null || _err$errors2 === void 0 ? void 0 : (_err$errors2$ = _err$errors2[0]) === null || _err$errors2$ === void 0 ? void 0 : _err$errors2$.message) || (_context9.t0 === null || _context9.t0 === void 0 ? void 0 : _context9.t0.message) || 'Unknown error';
+	              _this9.structureInfo = {
+	                success: false,
+	                error: msg
+	              };
+	            case 13:
+	              _context9.prev = 13;
+	              _this9.isGeneratingStructure = false;
+	              return _context9.finish(13);
+	            case 16:
+	            case "end":
+	              return _context9.stop();
+	          }
+	        }, _callee9, null, [[2, 9, 13, 16]]);
+	      }))();
+	    },
+	    analyzeStructure: function analyzeStructure() {
+	      var _this10 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
+	        var response, _err$errors3, _err$errors3$, msg;
+	        return _regeneratorRuntime().wrap(function _callee10$(_context10) {
+	          while (1) switch (_context10.prev = _context10.next) {
+	            case 0:
+	              _this10.syncEditorValues();
+	              _this10.isAnalyzingStructure = true;
+	              _context10.prev = 2;
+	              _context10.next = 5;
+	              return _this10.runAction('analyzeStructure', {
+	                moduleId: _this10.selectedModuleId,
+	                version: _this10.version,
+	                updater: _this10.updater || '',
+	                baseVersion: _this10.baseVersion || ''
+	              });
+	            case 5:
+	              response = _context10.sent;
+	              _this10.updater = response.data.updater || _this10.updater;
+	              _this10.refreshEditors();
+	              _context10.next = 14;
+	              break;
+	            case 10:
+	              _context10.prev = 10;
+	              _context10.t0 = _context10["catch"](2);
+	              msg = (_context10.t0 === null || _context10.t0 === void 0 ? void 0 : (_err$errors3 = _context10.t0.errors) === null || _err$errors3 === void 0 ? void 0 : (_err$errors3$ = _err$errors3[0]) === null || _err$errors3$ === void 0 ? void 0 : _err$errors3$.message) || (_context10.t0 === null || _context10.t0 === void 0 ? void 0 : _context10.t0.message) || 'Unknown error';
+	              alert(_this10.loc('MPBUILDER_UPDATE_ANALYZE_ERROR') + ': ' + msg);
+	            case 14:
+	              _context10.prev = 14;
+	              _this10.isAnalyzingStructure = false;
+	              return _context10.finish(14);
+	            case 17:
+	            case "end":
+	              return _context10.stop();
+	          }
+	        }, _callee10, null, [[2, 10, 14, 17]]);
+	      }))();
 	    },
 	    selectNewVersion: function selectNewVersion() {
-	      var _this8 = this;
+	      var _this11 = this;
 	      this.version = this.moduleInfo.nextVersion || '';
 	      this.description = this.moduleInfo.description || '<ul>\n  <li></li>\n</ul>';
 	      this.updater = this.moduleInfo.updater || '';
@@ -612,60 +572,62 @@
 	      this.buildResult = null;
 	      this.buildErrors = [];
 	      this.structureInfo = null;
+	      this.descriptionSaveInfo = null;
 	      this.saveVersion(this.selectedModuleId, null);
 	      this.$nextTick(function () {
-	        return _this8.refreshEditors();
+	        return _this11.refreshEditors();
 	      });
 	    },
 	    selectDevVersion: function selectDevVersion(ver) {
-	      var _this9 = this;
-	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
+	      var _this12 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11() {
 	        var response, data;
-	        return _regeneratorRuntime().wrap(function _callee9$(_context9) {
-	          while (1) switch (_context9.prev = _context9.next) {
+	        return _regeneratorRuntime().wrap(function _callee11$(_context11) {
+	          while (1) switch (_context11.prev = _context11.next) {
 	            case 0:
-	              if (!(_this9.isLoadingDevVersion || _this9.isBuilding)) {
-	                _context9.next = 2;
+	              if (!(_this12.isLoadingDevVersion || _this12.isBuilding)) {
+	                _context11.next = 2;
 	                break;
 	              }
-	              return _context9.abrupt("return");
+	              return _context11.abrupt("return");
 	            case 2:
-	              _this9.isLoadingDevVersion = true;
-	              _this9.prepareResult = null;
-	              _this9.buildResult = null;
-	              _this9.buildErrors = [];
-	              _this9.structureInfo = null;
-	              _context9.prev = 7;
-	              _context9.next = 10;
-	              return _this9.runAction('loadDevVersion', {
-	                moduleId: _this9.selectedModuleId,
+	              _this12.isLoadingDevVersion = true;
+	              _this12.prepareResult = null;
+	              _this12.buildResult = null;
+	              _this12.buildErrors = [];
+	              _this12.structureInfo = null;
+	              _this12.descriptionSaveInfo = null;
+	              _context11.prev = 8;
+	              _context11.next = 11;
+	              return _this12.runAction('loadDevVersion', {
+	                moduleId: _this12.selectedModuleId,
 	                version: ver
 	              });
-	            case 10:
-	              response = _context9.sent;
+	            case 11:
+	              response = _context11.sent;
 	              data = response.data;
-	              _this9.version = data.version || ver;
-	              _this9.description = data.description || '<ul>\n  <li></li>\n</ul>';
-	              _this9.updater = data.updater || '';
-	              _this9.saveVersion(_this9.selectedModuleId, ver);
-	              _this9.$nextTick(function () {
-	                return _this9.refreshEditors();
+	              _this12.version = data.version || ver;
+	              _this12.description = data.description || '<ul>\n  <li></li>\n</ul>';
+	              _this12.updater = data.updater || '';
+	              _this12.saveVersion(_this12.selectedModuleId, ver);
+	              _this12.$nextTick(function () {
+	                return _this12.refreshEditors();
 	              });
-	              _context9.next = 22;
+	              _context11.next = 23;
 	              break;
-	            case 19:
-	              _context9.prev = 19;
-	              _context9.t0 = _context9["catch"](7);
-	              console.error('Failed to load dev version', _context9.t0);
-	            case 22:
-	              _context9.prev = 22;
-	              _this9.isLoadingDevVersion = false;
-	              return _context9.finish(22);
-	            case 25:
+	            case 20:
+	              _context11.prev = 20;
+	              _context11.t0 = _context11["catch"](8);
+	              console.error('Failed to load dev version', _context11.t0);
+	            case 23:
+	              _context11.prev = 23;
+	              _this12.isLoadingDevVersion = false;
+	              return _context11.finish(23);
+	            case 26:
 	            case "end":
-	              return _context9.stop();
+	              return _context11.stop();
 	          }
-	        }, _callee9, null, [[7, 19, 22, 25]]);
+	        }, _callee11, null, [[8, 20, 23, 26]]);
 	      }))();
 	    },
 	    saveVersion: function saveVersion(moduleId, version) {
@@ -686,48 +648,48 @@
 	      }
 	    },
 	    refreshEditors: function refreshEditors() {
-	      var _this10 = this;
+	      var _this13 = this;
 	      this.descriptionEditor = null;
 	      this.updaterEditor = null;
 	      this.editorKey++;
 	      this.$nextTick(function () {
-	        return _this10.initCodeEditors();
+	        return _this13.initCodeEditors();
 	      });
 	    },
 	    restoreVersion: function restoreVersion() {
-	      var _this11 = this;
-	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
+	      var _this14 = this;
+	      return babelHelpers.asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee12() {
 	        var response;
-	        return _regeneratorRuntime().wrap(function _callee10$(_context10) {
-	          while (1) switch (_context10.prev = _context10.next) {
+	        return _regeneratorRuntime().wrap(function _callee12$(_context12) {
+	          while (1) switch (_context12.prev = _context12.next) {
 	            case 0:
-	              if (confirm(_this11.loc('MPBUILDER_UPDATE_RESTORE_CONFIRM'))) {
-	                _context10.next = 2;
+	              if (confirm(_this14.loc('MPBUILDER_UPDATE_RESTORE_CONFIRM'))) {
+	                _context12.next = 2;
 	                break;
 	              }
-	              return _context10.abrupt("return");
+	              return _context12.abrupt("return");
 	            case 2:
-	              _context10.prev = 2;
-	              _context10.next = 5;
-	              return _this11.runAction('restoreVersion', {
-	                moduleId: _this11.selectedModuleId
+	              _context12.prev = 2;
+	              _context12.next = 5;
+	              return _this14.runAction('restoreVersion', {
+	                moduleId: _this14.selectedModuleId
 	              });
 	            case 5:
-	              response = _context10.sent;
+	              response = _context12.sent;
 	              if (response.data) {
-	                _this11.loadModuleInfo(_this11.selectedModuleId);
+	                _this14.loadModuleInfo(_this14.selectedModuleId);
 	              }
-	              _context10.next = 12;
+	              _context12.next = 12;
 	              break;
 	            case 9:
-	              _context10.prev = 9;
-	              _context10.t0 = _context10["catch"](2);
-	              console.error('Failed to restore version', _context10.t0);
+	              _context12.prev = 9;
+	              _context12.t0 = _context12["catch"](2);
+	              console.error('Failed to restore version', _context12.t0);
 	            case 12:
 	            case "end":
-	              return _context10.stop();
+	              return _context12.stop();
 	          }
-	        }, _callee10, null, [[2, 9]]);
+	        }, _callee12, null, [[2, 9]]);
 	      }))();
 	    }
 	  },

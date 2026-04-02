@@ -121,20 +121,37 @@ class DevVersionStorage
 		return $this->decodeJsonFile($this->getFilePath(self::STRUCTURE_FILE));
 	}
 
+	public function loadVersionData(): ?array
+	{
+		return self::includeVersionFile($this->getFilePath(self::VERSION_FILE));
+	}
+
 	public function loadPreviousVersionData(): ?array
 	{
 		foreach (self::getAvailableVersions($this->moduleId) as $ver)
 		{
 			if ($this->version && version_compare($ver, $this->version, '<'))
 			{
-				$arModuleVersion = [];
-				include $this->getBaseDirPath() . "/$ver/" . self::VERSION_FILE;
-
-				return $arModuleVersion;
+				return self::includeVersionFile(
+					$this->getBaseDirPath() . "/$ver/" . self::VERSION_FILE
+				);
 			}
 		}
 
 		return null;
+	}
+
+	private static function includeVersionFile(string $filePath): ?array
+	{
+		if (!file_exists($filePath))
+		{
+			return null;
+		}
+
+		$arModuleVersion = [];
+		include $filePath;
+
+		return $arModuleVersion;
 	}
 
 	public function loadPreviousStructure(): ?array

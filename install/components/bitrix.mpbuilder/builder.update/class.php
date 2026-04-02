@@ -15,6 +15,7 @@ use Bitrix\MpBuilder\Factory\BuildStrategyFactory;
 use Bitrix\MpBuilder\Module;
 use Bitrix\MpBuilder\Service\ComponentSyncer;
 use Bitrix\MpBuilder\Service\FileCollector;
+use Bitrix\MpBuilder\Service\UpdaterGenerator;
 use Bitrix\MpBuilder\DevVersionStorage;
 use Bitrix\MpBuilder\Util\ExcludedFiles;
 use Bitrix\MpBuilder\Util\Filesystem;
@@ -69,11 +70,18 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			'analyzeStructure' => [
 				'prefilters' => [
 					new ActionFilter\Csrf(),
+					new ActionFilter\HttpMethod([ActionFilter\HttpMethod::METHOD_POST]),
 				],
 			],
 			'loadDevVersion' => [
 				'prefilters' => [
 					new ActionFilter\Csrf(),
+				],
+			],
+			'saveDescription' => [
+				'prefilters' => [
+					new ActionFilter\Csrf(),
+					new ActionFilter\HttpMethod([ActionFilter\HttpMethod::METHOD_POST]),
 				],
 			],
 		];
@@ -183,7 +191,8 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		string $moduleId,
 		string $version,
 		string $components = '',
-		string $namespace = ''
+		string $namespace = '',
+		string $customDateFrom = '',
 	): ?array
 	{
 		if (!$this->checkAdmin())
@@ -214,10 +223,17 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		$storage = new DevVersionStorage($moduleId, $version);
 		$storage->loadExclusions();
 
-		$arVersionForContext = DevVersionStorage::isActive($moduleId)
-			? ($storage->loadPreviousVersionData() ?? $arModuleVersion)
-			: $arModuleVersion;
-		$timeFrom = strtotime($arVersionForContext['VERSION_DATE'] ?? '');
+		if ($customDateFrom !== '')
+		{
+			$timeFrom = strtotime($customDateFrom);
+		}
+		else
+		{
+			$arVersionForContext = DevVersionStorage::isActive($moduleId)
+				? ($storage->loadPreviousVersionData() ?? $storage->loadVersionData() ?? $arModuleVersion)
+				: $arModuleVersion;
+			$timeFrom = strtotime($arVersionForContext['VERSION_DATE'] ?? '');
+		}
 		$originalModuleFiles = Filesystem::getFiles($moduleBuilder->getRootDirPath(), [], true);
 
 		$includedFiles = [];
@@ -258,7 +274,7 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			'includedCount' => count($includedFiles),
 			'excludedCount' => count($excludedFiles),
 			'hasComponentSync' => $hasComponentSync,
-			'versionDate' => $arModuleVersion['VERSION_DATE'] ?? '',
+			'versionDate' => $customDateFrom !== '' ? $customDateFrom : ($arVersionForContext['VERSION_DATE'] ?? ''),
 		];
 	}
 
@@ -269,7 +285,9 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		string $updater = '',
 		string $storeVersion = '',
 		string $components = '',
-		string $namespace = ''
+		string $namespace = '',
+		string $customDateFrom = '',
+		string $excludedFiles = '',
 	): ?array
 	{
 		if (!$this->checkAdmin())
@@ -349,9 +367,30 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 
 		$strategy = BuildStrategyFactory::createForUpdate($storage);
 		$isDevActive = DevVersionStorage::isActive($moduleId);
-		$arVersionForContext = $isDevActive
-			? ($storage->loadPreviousVersionData() ?? $arModuleVersion)
-			: $arModuleVersion;
+
+		if ($customDateFrom !== '')
+		{
+			$arVersionForContext = ['VERSION_DATE' => $customDateFrom];
+		}
+		else
+		{
+			$arVersionForContext = $isDevActive
+				? ($storage->loadPreviousVersionData() ?? $storage->loadVersionData() ?? $arModuleVersion)
+				: $arModuleVersion;
+		}
+
+		if ($excludedFiles !== '')
+		{
+			$userExcluded = json_decode($excludedFiles, true);
+
+			if (is_array($userExcluded))
+			{
+				ExcludedFiles::addExclusions(
+					array_map(static fn(string $f) => ltrim($f, '/'), $userExcluded)
+				);
+			}
+		}
+
 		$context = new BuildContext($moduleBuilder, $version, $versionContent, $description, $updater, $arVersionForContext);
 		$result = $strategy->build($context);
 
@@ -481,7 +520,7 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 		];
 	}
 
-	public function analyzeStructureAction(string $moduleId, string $version): ?array
+	public function analyzeStructureAction(string $moduleId, string $version, string $updater = '', string $baseVersion = ''): ?array
 	{
 		if (!$this->checkAdmin())
 		{
@@ -515,57 +554,131 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			return null;
 		}
 
-		$previousStructure = $storage->loadPreviousStructure();
+		if ($baseVersion !== '')
+		{
+			$baseStorage = new DevVersionStorage($moduleId, $baseVersion);
+			$previousStructure = $baseStorage->loadStructure();
+		}
+		else
+		{
+			$previousStructure = $storage->loadPreviousStructure();
+		}
 
 		if ($previousStructure === null)
 		{
-			$this->errorCollection->setError(new Error('No previous module-structure.json found. Generate structure for the current version first.'));
+			$errorVersion = $baseVersion !== '' ? $baseVersion : 'previous';
+			$this->errorCollection->setError(new Error("No module-structure.json found for version $errorVersion. Generate structure first."));
 
 			return null;
 		}
 
 		$prevVersion = $previousStructure['version'] ?? '';
-		$prevFiles = array_values(array_filter(
-			$previousStructure['files'] ?? [],
-			static fn(string $f) => !ExcludedFiles::matches($f)
-		));
+		$prevFilesRaw = $previousStructure['files'] ?? [];
+		$isLegacyFormat = array_is_list($prevFilesRaw);
 
-		$allFiles = FileCollector::getAll($moduleBuilder);
+		if ($isLegacyFormat)
+		{
+			$prevFiles = [];
 
-		$currentLookup = array_flip($allFiles);
-		$deletedFiles = array_values(array_filter($prevFiles, fn(string $f) => !isset($currentLookup[$f])));
+			foreach ($prevFilesRaw as $path)
+			{
+				if (!ExcludedFiles::matches($path))
+				{
+					$prevFiles[$path] = null;
+				}
+			}
+		}
+		else
+		{
+			$prevFiles = array_filter(
+				$prevFilesRaw,
+				static fn(string $hash, string $path) => !ExcludedFiles::matches($path),
+				ARRAY_FILTER_USE_BOTH,
+			);
+		}
 
-		$arModuleVersion = $moduleBuilder->loadVersion();
-		$arVersionForContext = $storage->loadPreviousVersionData() ?? $arModuleVersion;
-		$timeFrom = strtotime($arVersionForContext['VERSION_DATE'] ?? '');
+		$currentFiles = FileCollector::getAll($moduleBuilder);
+
+		$deletedFiles = array_keys(array_diff_key($prevFiles, $currentFiles));
 
 		$changedInstallDirs = [];
 
-		foreach ($allFiles as $file)
+		foreach ($currentFiles as $file => $hash)
 		{
 			if (!str_starts_with($file, '/install/') || $file === '/install/version.php')
 			{
 				continue;
 			}
 
-			if (filemtime($moduleBuilder->getRootDirPath() . $file) < $timeFrom)
-			{
-				continue;
-			}
+			$isNew = !isset($prevFiles[$file]);
+			$isModified = !$isNew && !$isLegacyFormat && $prevFiles[$file] !== $hash;
 
-			$parts = explode('/', ltrim($file, '/'));
-
-			if (count($parts) >= 3)
+			if ($isNew || $isModified)
 			{
-				$changedInstallDirs[$parts[1]] = true;
+				$parts = explode('/', ltrim($file, '/'));
+
+				if (count($parts) >= 3)
+				{
+					$changedInstallDirs[$parts[1]] = true;
+				}
 			}
 		}
 
+		$resultUpdater = UpdaterGenerator::applyAutoBlock(
+			$updater,
+			$moduleId,
+			array_keys($changedInstallDirs),
+			$deletedFiles,
+			$prevVersion,
+		);
+
 		return [
-			'prevVersion' => $prevVersion,
-			'deletedFiles' => $deletedFiles,
-			'changedInstallDirs' => array_keys($changedInstallDirs),
-			'moduleId' => $moduleId,
+			'updater' => $resultUpdater,
+		];
+	}
+
+	public function saveDescriptionAction(string $moduleId, string $version, string $description): ?array
+	{
+		if (!$this->checkAdmin())
+		{
+			return null;
+		}
+
+		$moduleId = Module::sanitizeId($moduleId);
+
+		if (!$moduleId || !Module::exists($moduleId))
+		{
+			$this->errorCollection->setError(new Error('Module not found'));
+
+			return null;
+		}
+
+		if (!$version)
+		{
+			$this->errorCollection->setError(new Error('Version is required'));
+
+			return null;
+		}
+
+		if (!DevVersionStorage::isActive($moduleId))
+		{
+			$this->errorCollection->setError(new Error('Dev strategy is not active'));
+
+			return null;
+		}
+
+		$storage = new DevVersionStorage($moduleId, $version);
+
+		if (!$storage->saveDescription($description))
+		{
+			$this->errorCollection->setError(new Error('Failed to save description'));
+
+			return null;
+		}
+
+		return [
+			'success' => true,
+			'path' => "/dev/updates/$moduleId/$version/description.ru",
 		];
 	}
 
@@ -620,11 +733,14 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			$updater = $storage->getUpdater();
 		}
 
+		$versionData = $storage->loadVersionData();
+
 		return [
 			'version' => $version,
 			'description' => $description,
 			'updater' => $updater,
 			'hasStructure' => $storage->hasStructure(),
+			'versionDate' => $versionData['VERSION_DATE'] ?? '',
 		];
 	}
 }

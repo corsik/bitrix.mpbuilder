@@ -1,6 +1,5 @@
 import { APP_CONTAINER_ID, COMPONENT_NAME } from './constants';
 import { appTemplate } from './template';
-import { applyAutoBlock as applyAutoBlockToUpdater } from './updater-generator';
 
 const BuilderUpdateApp = {
 	props: {
@@ -21,11 +20,15 @@ const BuilderUpdateApp = {
 			namespace: '',
 			description: '',
 			updater: '',
+			useCustomDate: false,
+			customDateFrom: '',
+			baseVersion: '',
 
 			isPreparing: false,
 			prepareResult: null,
 			prepareIncludedExpanded: true,
 			prepareExcludedExpanded: true,
+			removedFiles: [],
 
 			isBuilding: false,
 			buildResult: null,
@@ -36,6 +39,9 @@ const BuilderUpdateApp = {
 			isGeneratingStructure: false,
 			isAnalyzingStructure: false,
 			structureInfo: null,
+
+			isSavingDescription: false,
+			descriptionSaveInfo: null,
 
 			devVersions: [],
 			isLoadingDevVersion: false,
@@ -60,6 +66,18 @@ const BuilderUpdateApp = {
 			return this.prepareResult
 				&& !this.isBuilding;
 		},
+
+		filteredIncludedFiles()
+		{
+			if (!this.prepareResult)
+			{
+				return [];
+			}
+
+			return this.prepareResult.includedFiles.filter(
+				(f) => !this.removedFiles.includes(f),
+			);
+		},
 	},
 
 	mounted()
@@ -68,12 +86,51 @@ const BuilderUpdateApp = {
 	},
 
 	watch: {
+		useCustomDate(val)
+		{
+			if (val && !this.customDateFrom)
+			{
+				const now = new Date();
+				now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+				this.customDateFrom = now.toISOString().slice(0, 16);
+			}
+		},
+
+		async baseVersion(ver)
+		{
+			if (!ver)
+			{
+				return;
+			}
+
+			try
+			{
+				const response = await this.runAction('loadDevVersion', {
+					moduleId: this.selectedModuleId,
+					version: ver,
+				});
+
+				if (response.data.versionDate)
+				{
+					this.useCustomDate = true;
+					const d = new Date(response.data.versionDate.replace(' ', 'T'));
+					d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+					this.customDateFrom = d.toISOString().slice(0, 16);
+				}
+			}
+			catch (err)
+			{
+				console.error('Failed to load base version date', err);
+			}
+		},
+
 		selectedModuleId(newVal)
 		{
 			this.prepareResult = null;
 			this.buildResult = null;
 			this.buildErrors = [];
 			this.structureInfo = null;
+			this.descriptionSaveInfo = null;
 
 			if (newVal)
 			{
@@ -234,9 +291,11 @@ const BuilderUpdateApp = {
 					version: this.version,
 					components: this.components,
 					namespace: this.namespace,
+					customDateFrom: this.useCustomDate ? this.customDateFrom : '',
 				});
 
 				this.prepareResult = response.data;
+				this.removedFiles = [];
 			}
 			catch (response)
 			{
@@ -255,6 +314,19 @@ const BuilderUpdateApp = {
 			{
 				this.isPreparing = false;
 			}
+		},
+
+		removeFile(file)
+		{
+			if (!this.removedFiles.includes(file))
+			{
+				this.removedFiles.push(file);
+			}
+		},
+
+		restoreFile(file)
+		{
+			this.removedFiles = this.removedFiles.filter((f) => f !== file);
 		},
 
 		cancelPrepare()
@@ -287,6 +359,8 @@ const BuilderUpdateApp = {
 					storeVersion: this.storeVersion,
 					components: this.components,
 					namespace: this.namespace,
+					customDateFrom: this.useCustomDate ? this.customDateFrom : '',
+					excludedFiles: JSON.stringify(this.removedFiles),
 				});
 
 				this.buildResult = response.data;
@@ -329,6 +403,33 @@ const BuilderUpdateApp = {
 			}
 		},
 
+		async saveDescription()
+		{
+			this.syncEditorValues();
+			this.isSavingDescription = true;
+			this.descriptionSaveInfo = null;
+
+			try
+			{
+				await this.runAction('saveDescription', {
+					moduleId: this.selectedModuleId,
+					version: this.version,
+					description: this.description,
+				});
+
+				this.descriptionSaveInfo = { success: true };
+			}
+			catch (err)
+			{
+				const msg = err?.errors?.[0]?.message || err?.message || 'Unknown error';
+				this.descriptionSaveInfo = { success: false, error: msg };
+			}
+			finally
+			{
+				this.isSavingDescription = false;
+			}
+		},
+
 		async generateStructure()
 		{
 			this.isGeneratingStructure = true;
@@ -356,41 +457,30 @@ const BuilderUpdateApp = {
 
 		async analyzeStructure()
 		{
+			this.syncEditorValues();
 			this.isAnalyzingStructure = true;
-
-			let data = null;
 
 			try
 			{
 				const response = await this.runAction('analyzeStructure', {
 					moduleId: this.selectedModuleId,
 					version: this.version,
+					updater: this.updater || '',
+					baseVersion: this.baseVersion || '',
 				});
 
-				data = response.data;
+				this.updater = response.data.updater || this.updater;
+				this.refreshEditors();
 			}
 			catch (err)
 			{
 				const msg = err?.errors?.[0]?.message || err?.message || 'Unknown error';
 				alert(this.loc('MPBUILDER_UPDATE_ANALYZE_ERROR') + ': ' + msg);
-				return;
 			}
 			finally
 			{
 				this.isAnalyzingStructure = false;
 			}
-
-			if (data)
-			{
-				this.applyAutoBlock(data);
-			}
-		},
-
-		applyAutoBlock(data)
-		{
-			data.moduleId = data.moduleId || this.selectedModuleId;
-			this.updater = applyAutoBlockToUpdater(this.updater || '', data);
-			this.refreshEditors();
 		},
 
 		selectNewVersion()
@@ -402,6 +492,7 @@ const BuilderUpdateApp = {
 			this.buildResult = null;
 			this.buildErrors = [];
 			this.structureInfo = null;
+			this.descriptionSaveInfo = null;
 			this.saveVersion(this.selectedModuleId, null);
 			this.$nextTick(() => this.refreshEditors());
 		},
@@ -418,6 +509,7 @@ const BuilderUpdateApp = {
 			this.buildResult = null;
 			this.buildErrors = [];
 			this.structureInfo = null;
+			this.descriptionSaveInfo = null;
 
 			try
 			{
