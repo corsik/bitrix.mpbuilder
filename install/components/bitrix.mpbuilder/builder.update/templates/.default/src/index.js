@@ -252,7 +252,11 @@ const BuilderUpdateApp = {
 		{
 			if (this.descriptionEditor)
 			{
-				this.descriptionEditor.Save();
+				try
+				{
+					this.descriptionEditor.Save();
+				}
+				catch (e) {}
 				const el = document.getElementById('mpb-description-editor');
 				if (el)
 				{
@@ -262,7 +266,11 @@ const BuilderUpdateApp = {
 
 			if (this.updaterEditor)
 			{
-				this.updaterEditor.Save();
+				try
+				{
+					this.updaterEditor.Save();
+				}
+				catch (e) {}
 				const el = document.getElementById('mpb-updater-editor');
 				if (el)
 				{

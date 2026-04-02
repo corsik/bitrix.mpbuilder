@@ -216,17 +216,6 @@ export const appTemplate = `
 									<button
 										class="mpb-update__button mpb-update__button--tool"
 										:disabled="!version || isBuilding"
-										@click="generateStructure"
-										:title="loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE_HINT')"
-									>
-										<template v-if="isGeneratingStructure">
-											<span class="mpb-update__spinner mpb-update__spinner--xs mpb-update__spinner--secondary"></span>
-										</template>
-										{{ loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE') }}
-									</button>
-									<button
-										class="mpb-update__button mpb-update__button--tool"
-										:disabled="!version || isBuilding"
 										@click="analyzeStructure"
 										:title="loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE_HINT')"
 									>
@@ -239,14 +228,6 @@ export const appTemplate = `
 										{{ loc('MPBUILDER_UPDATE_ANALYZE_STRUCTURE') }}
 									</button>
 								</div>
-							</div>
-							<div v-if="structureInfo" class="mpb-update__structure-hint" :class="{ 'mpb-update__structure-hint--error': !structureInfo.success }">
-								<template v-if="structureInfo.success">
-									{{ loc('MPBUILDER_UPDATE_STRUCTURE_SAVED') }} ({{ structureInfo.count }})
-								</template>
-								<template v-else>
-									{{ structureInfo.error }}
-								</template>
 							</div>
 							<textarea
 								id="mpb-updater-editor"
@@ -272,6 +253,29 @@ export const appTemplate = `
 							{{ loc('MPBUILDER_UPDATE_PREPARE_BUTTON') }}
 						</template>
 					</button>
+					<button
+						v-if="moduleInfo.isDevStrategyActive"
+						class="mpb-update__button mpb-update__button--structure"
+						:disabled="!version || isBuilding"
+						@click="generateStructure"
+						:title="loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE_HINT')"
+					>
+						<template v-if="isGeneratingStructure">
+							<span class="mpb-update__spinner mpb-update__spinner--sm"></span>
+						</template>
+						<template v-else>
+							<span class="ui-icon-set --folders"></span>
+						</template>
+						{{ loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE') }}
+					</button>
+					<div v-if="structureInfo" class="mpb-update__structure-hint" :class="{ 'mpb-update__structure-hint--error': !structureInfo.success }">
+						<template v-if="structureInfo.success">
+							{{ loc('MPBUILDER_UPDATE_STRUCTURE_SAVED') }} ({{ structureInfo.count }})
+						</template>
+						<template v-else>
+							{{ structureInfo.error }}
+						</template>
+					</div>
 				</div>
 
 			</template>
@@ -397,6 +401,21 @@ export const appTemplate = `
 							</template>
 						</button>
 						<button
+							v-if="moduleInfo.isDevStrategyActive"
+							class="mpb-update__button mpb-update__button--structure"
+							:disabled="!version || isBuilding"
+							@click="generateStructure"
+							:title="loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE_HINT')"
+						>
+							<template v-if="isGeneratingStructure">
+								<span class="mpb-update__spinner mpb-update__spinner--sm"></span>
+							</template>
+							<template v-else>
+								<span class="ui-icon-set --folders"></span>
+							</template>
+							{{ loc('MPBUILDER_UPDATE_GENERATE_STRUCTURE') }}
+						</button>
+						<button
 							class="mpb-update__button mpb-update__button--secondary"
 							:disabled="isBuilding || isPreparing"
 							@click="prepareUpdate"
@@ -413,6 +432,14 @@ export const appTemplate = `
 							:disabled="isBuilding"
 							@click="cancelPrepare"
 						>{{ loc('MPBUILDER_UPDATE_CANCEL_PREPARE') }}</button>
+						<div v-if="structureInfo" class="mpb-update__structure-hint" :class="{ 'mpb-update__structure-hint--error': !structureInfo.success }">
+							<template v-if="structureInfo.success">
+								{{ loc('MPBUILDER_UPDATE_STRUCTURE_SAVED') }} ({{ structureInfo.count }})
+							</template>
+							<template v-else>
+								{{ structureInfo.error }}
+							</template>
+						</div>
 					</div>
 				</div>
 			</div>
