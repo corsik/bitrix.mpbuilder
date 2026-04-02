@@ -15,6 +15,7 @@ use Bitrix\MpBuilder\Factory\BuildStrategyFactory;
 use Bitrix\MpBuilder\Module;
 use Bitrix\MpBuilder\Service\ComponentSyncer;
 use Bitrix\MpBuilder\Service\FileCollector;
+use Bitrix\MpBuilder\Service\StructureAnalyzer;
 use Bitrix\MpBuilder\Service\UpdaterGenerator;
 use Bitrix\MpBuilder\DevVersionStorage;
 use Bitrix\MpBuilder\Util\ExcludedFiles;
@@ -572,64 +573,16 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			return null;
 		}
 
-		$prevVersion = $previousStructure['version'] ?? '';
-		$prevFilesRaw = $previousStructure['files'] ?? [];
-		$isLegacyFormat = array_is_list($prevFilesRaw);
-
-		if ($isLegacyFormat)
-		{
-			$prevFiles = [];
-
-			foreach ($prevFilesRaw as $path)
-			{
-				if (!ExcludedFiles::matches($path))
-				{
-					$prevFiles[$path] = null;
-				}
-			}
-		}
-		else
-		{
-			$prevFiles = array_filter(
-				$prevFilesRaw,
-				static fn(string $hash, string $path) => !ExcludedFiles::matches($path),
-				ARRAY_FILTER_USE_BOTH,
-			);
-		}
-
 		$currentFiles = FileCollector::getAll($moduleBuilder);
 
-		$deletedFiles = array_keys(array_diff_key($prevFiles, $currentFiles));
-
-		$changedInstallDirs = [];
-
-		foreach ($currentFiles as $file => $hash)
-		{
-			if (!str_starts_with($file, '/install/') || $file === '/install/version.php')
-			{
-				continue;
-			}
-
-			$isNew = !isset($prevFiles[$file]);
-			$isModified = !$isNew && !$isLegacyFormat && $prevFiles[$file] !== $hash;
-
-			if ($isNew || $isModified)
-			{
-				$parts = explode('/', ltrim($file, '/'));
-
-				if (count($parts) >= 3)
-				{
-					$changedInstallDirs[$parts[1]] = true;
-				}
-			}
-		}
+		$analysis = StructureAnalyzer::analyze($previousStructure, $currentFiles, $moduleId);
 
 		$resultUpdater = UpdaterGenerator::applyAutoBlock(
 			$updater,
 			$moduleId,
-			array_keys($changedInstallDirs),
-			$deletedFiles,
-			$prevVersion,
+			$analysis['changedInstallDirs'],
+			$analysis['deletedFiles'],
+			$analysis['prevVersion'],
 		);
 
 		return [
@@ -743,4 +696,5 @@ class BuilderUpdateComponent extends BaseBuilderComponent
 			'versionDate' => $versionData['VERSION_DATE'] ?? '',
 		];
 	}
+
 }

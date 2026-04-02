@@ -1,0 +1,20 @@
+{
+	"name": "corsik/mpbuilder",
+	"type": "library",
+	"scripts": {
+		"test": "phpunit"
+	},
+	"autoload": {
+		"psr-4": {
+			"Bitrix\\MpBuilder\\": "lib"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Bitrix\\MpBuilder\\Tests\\": "tests"
+		}
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^11.5"
+	}
+}

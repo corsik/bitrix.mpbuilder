@@ -24,9 +24,11 @@ class ExcludedFiles
 
 	private static array $customExclusions = self::DEFAULT_CUSTOM_EXCLUSIONS;
 
+	private static ?array $mergedCache = null;
+
 	public static function getAll(): array
 	{
-		return array_merge(self::$systemFiles, self::$customExclusions);
+		return self::$mergedCache ??= array_merge(self::$systemFiles, self::$customExclusions);
 	}
 
 	public static function getSystem(): array
@@ -44,6 +46,7 @@ class ExcludedFiles
 		if (!in_array($file, self::$customExclusions, true))
 		{
 			self::$customExclusions[] = $file;
+			self::$mergedCache = null;
 		}
 	}
 
@@ -61,12 +64,14 @@ class ExcludedFiles
 		if ($key !== false)
 		{
 			unset(self::$customExclusions[$key]);
+			self::$mergedCache = null;
 		}
 	}
 
 	public static function resetCustom(): void
 	{
 		self::$customExclusions = self::DEFAULT_CUSTOM_EXCLUSIONS;
+		self::$mergedCache = null;
 	}
 
 	public static function isExcluded(string $filename): bool
@@ -89,12 +94,15 @@ class ExcludedFiles
 				return true;
 			}
 
-			if (
-				self::matchesPattern($normalized, $pattern)
-				|| self::matchesPattern($basename, $pattern)
-			)
+			if (str_contains($pattern, '*') || str_contains($pattern, '?'))
 			{
-				return true;
+				if (
+					self::matchesPattern($normalized, $pattern)
+					|| self::matchesPattern($basename, $pattern)
+				)
+				{
+					return true;
+				}
 			}
 		}
 
@@ -103,13 +111,21 @@ class ExcludedFiles
 
 	private static function matchesPattern(string $filename, string $pattern): bool
 	{
-		$pattern = str_replace(
-			['*', '?'],
-			['.*', '.'],
-			preg_quote($pattern, '#')
-		);
+		$parts = preg_split('/([*?])/', $pattern, -1, PREG_SPLIT_DELIM_CAPTURE);
+		$regex = '#^';
 
-		return (bool)preg_match('#^' . $pattern . '$#i', $filename);
+		foreach ($parts as $part)
+		{
+			$regex .= match ($part)
+			{
+				'*' => '.*',
+				'?' => '.',
+				default => preg_quote($part, '#'),
+			};
+		}
+
+		$regex .= '$#i';
+
+		return (bool)preg_match($regex, $filename);
 	}
 }
-
